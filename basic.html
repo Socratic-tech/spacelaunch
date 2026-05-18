@@ -569,6 +569,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 .udl-kid .school-goal{font-size:15px;color:#d7efff;background:rgba(255,255,255,.06);padding:10px;border-radius:10px}
 .udl-kid .school-instruction{font-size:20px;line-height:1.32;border-radius:14px;padding:14px;background:rgba(60,244,143,.12);border-color:rgba(60,244,143,.32)}
 .udl-kid .school-actions{gap:10px}.udl-kid .school-big-btn{padding:16px}.udl-kid .school-big-btn.secondary{font-size:15px}
+.udl-kid .udl-rocket-ready{display:flex;align-items:center;justify-content:center;min-height:60px;border-radius:14px;background:rgba(60,244,143,.14);border:2px solid rgba(60,244,143,.36);color:#eafff2;font-family:var(--font-ui);font-size:19px;font-weight:900;text-align:center;padding:12px}.udl-kid .school-actions{grid-template-columns:1fr;}.udl-kid .school-actions .school-big-btn.secondary{font-size:22px;min-height:68px}
 .udl-kid .school-steps{display:none}.udl-kid .school-lesson-list{gap:8px}
 .udl-kid .school-lesson-card-btn{border-radius:12px;padding:11px;grid-template-columns:40px 1fr auto}
 .udl-kid .school-lesson-name{font-size:16px}.udl-kid .school-lesson-meta{font-size:11px}.udl-kid .school-lesson-status{font-size:10px}
@@ -648,7 +649,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 <div class="udl-strip" role="region" aria-label="Rocket School student tools">
   <div class="udl-steps">
     <div class="udl-step-card"><b>1</b><span>Pick a lesson</span></div>
-    <div class="udl-step-card"><b>2</b><span>Load the rocket</span></div>
+    <div class="udl-step-card"><b>2</b><span>Rocket is ready</span></div>
     <div class="udl-step-card"><b>3</b><span>Launch and notice</span></div>
   </div>
   <div class="udl-tools">
@@ -1547,6 +1548,13 @@ function selectSchoolLesson(i){
   if(i>easySchoolLevel) return;
   activeSchoolLesson=i;
   localStorage.setItem(ROCKET_SCHOOL_SELECTED_KEY,activeSchoolLesson);
+  if(gameMode==='easy' && !rocketLicenseEarned){
+    const lesson=currentSchoolLesson();
+    build=JSON.parse(JSON.stringify(lesson.build));
+    sanitizeBuildForMode();
+    renderAll();
+    return;
+  }
   renderRocketSchool();
   renderLandingChallenge();
 }
@@ -1577,7 +1585,7 @@ function renderRocketSchool(){
   const parts=document.getElementById('parts');
   if(parts) parts.classList.toggle('school-guided',gameMode==='easy');
   const sample=document.getElementById('sampleBtn');
-  if(sample) sample.textContent=gameMode==='easy'?'1 LOAD LESSON ROCKET':(gameMode==='landing'?'⚡ LOAD SELECTED MISSION':'⚡ SAMPLE BUILD');
+  if(sample) sample.textContent=gameMode==='easy'?'LESSON ROCKET READY':(gameMode==='landing'?'⚡ LOAD SELECTED MISSION':'⚡ SAMPLE BUILD');
   if(!panel||!body||gameMode!=='easy') return;
   const l=currentSchoolLesson();
   if(label) label.textContent=rocketLicenseEarned?'ROCKET LICENSE':`LESSON ${activeSchoolLesson+1} / ${ROCKET_SCHOOL_LESSONS.length}`;
@@ -1640,8 +1648,8 @@ function renderRocketSchool(){
     <div class="school-goal">${l.goal.replace('Goal: ','')}</div>
     <div class="school-instruction">${l.instruction}</div>
     <div class="school-actions">
-      <button class="school-big-btn" onclick="loadSchoolLesson(${activeSchoolLesson})">1 LOAD ROCKET</button>
-      <button class="school-big-btn secondary" onclick="udlLaunchLesson()">2 LAUNCH</button>
+      <div class="udl-rocket-ready">✅ Lesson rocket is ready</div>
+      <button class="school-big-btn secondary" onclick="udlLaunchLesson()">LAUNCH</button>
     </div>
     <div class="udl-simple-trail">${simpleTrail}</div>
     <div class="school-lesson-list">${lessonList}</div>
@@ -3113,10 +3121,11 @@ function drawDebris(rocketY=250){
 function drawScene(rocketY,tilt,burning,finished=false){
   const W=canvas.width, H=canvas.height;
   ctx.clearRect(0,0,W,H);
-  const alt=launchState?.altitude||0;
+  const simpleStudentFlight=document.body.classList.contains('udl-kid') && gameMode==='easy';
+  const alt=launchState?.visualAltitude ?? launchState?.altitude ?? 0;
   const band=currentBand();
   const t=performance.now()/1000;
-  const scroll=alt*.065+(burning?t*28:t*8);
+  const scroll=alt*.045+(burning?t*(simpleStudentFlight?10:28):t*6);
 
   // Sky gradient
   const grad=ctx.createLinearGradient(0,0,0,H);
@@ -3184,8 +3193,9 @@ function drawScene(rocketY,tilt,burning,finished=false){
     ctx.restore();
   }
 
-  // Shake
-  const shake=launchState?.shake||0;
+  // Shake — keep the grade 2–4 student view calm instead of jittery.
+  const rawShake=launchState?.shake||0;
+  const shake=simpleStudentFlight?Math.min(rawShake,3.5):rawShake;
   const sx=(Math.random()-.5)*shake, sy=(Math.random()-.5)*shake;
 
   drawDebris(rocketY);
@@ -3204,7 +3214,6 @@ function drawScene(rocketY,tilt,burning,finished=false){
   }
 
   drawReusableBoosterPanel();
-  const simpleStudentFlight=document.body.classList.contains('udl-kid') && gameMode==='easy';
   if(!simpleStudentFlight) drawAltScale();
 
   // Event text
@@ -3732,12 +3741,21 @@ function flightStep(now){
   updateReusableBooster(dt);
   checkMilestones();
 
-  const screenLift=Math.min(210,Math.max(Math.sqrt(Math.max(0,launchState.altitude))*14,Math.min(130,launchState.altitude*3.5)));
+  const visualEase=document.body.classList.contains('udl-kid') && gameMode==='easy'
+    ? Math.min(1, realDt*2.2)
+    : Math.min(1, realDt*4.5);
+  launchState.visualAltitude = (launchState.visualAltitude ?? launchState.altitude) + (launchState.altitude - (launchState.visualAltitude ?? launchState.altitude))*visualEase;
+  const visualAlt=Math.max(0,launchState.visualAltitude||0);
+  const screenLift=Math.min(150,Math.max(Math.sqrt(visualAlt)*11,Math.min(115,visualAlt*2.1)));
+  const targetRocketY=Math.max(250,400-screenLift);
+  const yEase=Math.min(1, realDt*4.2);
+  launchState.screenY = (launchState.screenY ?? 400) + (targetRocketY - (launchState.screenY ?? 400))*yEase;
   const flightSec=(performance.now()-(launchState.startTime||performance.now()))/1000;
   const lowStab=Math.max(0,(35-m.stability)/35);
-  const vibe=(burning&&flightSec<1.4)?Math.sin(now/55)*.018:0;
-  const wobble=(burning&&lowStab>0)?Math.sin(now/120)*lowStab*.16:0;
-  const rocketY=launchState.altitude<260?400-screenLift:250;
+  const kidCalm=document.body.classList.contains('udl-kid') && gameMode==='easy';
+  const vibe=(burning&&!kidCalm&&flightSec<1.4)?Math.sin(now/55)*.018:0;
+  const wobble=(burning&&!kidCalm&&lowStab>0)?Math.sin(now/120)*lowStab*.16:0;
+  const rocketY=launchState.screenY;
 
   drawScene(rocketY,vibe+wobble,burning);
   updateHUD();
@@ -3776,6 +3794,7 @@ function openLaunch(){
     stageWindow:false,events:[],milestones:new Set(),
     shake:0,maxAltitude:0,score:0,trail:[],debris:[],stageDebris:[],sepParticles:[],
     gravity:9.81,liveTwr:0,accel:0,startTime:0,initialMass:0,initialFuel:0,
+    visualAltitude:0,screenY:400,
     coastSpeed:1,apogeeAssist:false,sepFlash:0,sepCinematic:0,
     stagingFeedback:[],stagingBonus:0,landingScore:0,reusable:null,
     landingProfile:isLandingMode()?currentLandingProfile():null,
@@ -3817,7 +3836,7 @@ function igniteFirst(){
     ? (activeSchoolLesson<4 ? 'Watch what changes.' : 'Watch for burnout, then use the next big button.')
     : 'Watch altitude and time the next stage.';
   setResult(`<div class="result-icon">${q>.82?'🎯':'🔥'}</div><div><div class="result-cue stage-cue">${qMsg} ${nextTip}</div></div>`);
-  launchState.shake=22;
+  launchState.shake=(document.body.classList.contains('udl-kid') && gameMode==='easy')?4:22;
   igniteStage(0,q);
   launchState.startTime=performance.now();
   launchState.last=performance.now();
@@ -4069,6 +4088,15 @@ function udlRetryLesson(){
   closeLaunchOverlay();
   loadSchoolLesson(activeSchoolLesson);
 }
+
+function udlAutoLoadSelectedLesson(){
+  if(gameMode==='easy' && document.body.classList.contains('udl-kid') && !rocketLicenseEarned){
+    const lesson=currentSchoolLesson();
+    build=JSON.parse(JSON.stringify(lesson.build));
+    sanitizeBuildForMode();
+  }
+}
+
 function udlApplyStudentLabels(){
   const hint=document.getElementById('hint');
   if(hint) hint.textContent='Rocket goes here';
@@ -4084,7 +4112,8 @@ document.getElementById('launchBtn2').onclick=startMainLaunch;
 document.getElementById('clearBtn').onclick=clearBuild;
 document.getElementById('sampleBtn').onclick=buildSample;
 document.getElementById('saveBtn').onclick=()=>{localStorage.setItem(modeStorageKey('slBuild'),JSON.stringify(build));alert(`${modeConfig().label} rocket saved!`);};
-document.getElementById('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(modeStorageKey('slBuild')) || (gameMode==='career'?null:localStorage.getItem('slBuild'));const b=JSON.parse(raw);if(b){build=b;sanitizeBuildForMode();renderAll();}else alert('No saved rocket found for this mode.');}catch(e){alert('No saved rocket found for this mode.');}};
+document.getElementById('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(modeStorageKey('slBuild')) || (gameMode==='career'?null:localStorage.getItem('slBuild'));const b=JSON.parse(raw);if(b){build=b;sanitizeBuildForMode();udlAutoLoadSelectedLesson();
+renderAll();}else alert('No saved rocket found for this mode.');}catch(e){alert('No saved rocket found for this mode.');}};
 document.getElementById('commitBtn').onclick=igniteFirst;
 document.getElementById('nextBtn').onclick=igniteNext;
 document.getElementById('coastBtn').onclick=coastToApogee;
