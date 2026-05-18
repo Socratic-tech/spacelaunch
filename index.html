@@ -1,0 +1,1987 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Space Launch</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;800&display=swap');
+
+:root{
+  --sky:#0a1628;
+  --sky2:#0d1e35;
+  --panel:#0f1e32;
+  --panel2:#162436;
+  --border:#1e3450;
+  --border2:#243d58;
+  --text:#d8eeff;
+  --muted:#6a8faa;
+  --accent:#f5c400;
+  --accent2:#ff6a00;
+  --green:#00e87a;
+  --red:#ff3f5a;
+  --blue:#42b4ff;
+  --glow:rgba(245,196,0,.18);
+  --font-hud:'Orbitron',monospace;
+  --font-mono:'Share Tech Mono',monospace;
+  --font-ui:'Barlow Condensed',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--sky);color:var(--text);font-family:var(--font-ui);overflow-x:hidden}
+
+/* ─── HEADER ─── */
+header{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 20px;background:rgba(10,20,40,.97);
+  border-bottom:2px solid var(--accent);
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 32px rgba(0,0,0,.6),0 0 0 1px rgba(245,196,0,.08);
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo svg{width:34px;height:34px;flex-shrink:0}
+.logo h1{font-family:var(--font-hud);font-size:18px;font-weight:900;letter-spacing:.1em;color:var(--accent);text-shadow:0 0 18px rgba(245,196,0,.5)}
+.logo .sub{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.08em;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:10px}
+.best-badge{font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(245,196,0,.1);border:1px solid rgba(245,196,0,.3);padding:5px 10px;border-radius:6px;white-space:nowrap}
+
+/* ─── LAYOUT ─── */
+.app{display:grid;grid-template-columns:280px 1fr 300px;gap:12px;padding:12px;max-width:1460px;margin:auto;min-height:calc(100vh - 60px)}
+.col{display:flex;flex-direction:column;gap:12px}
+
+/* ─── PANELS ─── */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.panel-header{
+  font-family:var(--font-hud);font-size:11px;font-weight:700;letter-spacing:.14em;
+  padding:9px 14px;border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.025);color:var(--accent);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.panel-body{padding:12px}
+
+/* ─── TABS ─── */
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.tab{font-family:var(--font-hud);font-size:10px;font-weight:700;letter-spacing:.08em;padding:8px 4px;border-radius:6px;border:1px solid var(--border2);background:var(--panel2);color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
+.tab:hover{color:var(--text);border-color:var(--muted)}
+.tab.active{background:var(--accent);color:#0a0800;border-color:var(--accent);box-shadow:0 0 12px rgba(245,196,0,.35)}
+
+/* ─── PART CARDS ─── */
+.parts-scroll{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 240px);overflow-y:auto;padding-right:2px}
+.parts-scroll::-webkit-scrollbar{width:4px}
+.parts-scroll::-webkit-scrollbar-track{background:transparent}
+.parts-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+.part-card{
+  display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;
+  padding:9px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--panel2);cursor:pointer;
+  transition:border-color .12s,transform .1s,box-shadow .12s;
+  position:relative;
+}
+.part-card:hover{border-color:var(--accent);transform:translateX(2px);box-shadow:0 0 10px rgba(245,196,0,.15)}
+.part-card.locked{opacity:.45;cursor:not-allowed;filter:grayscale(.7)}
+.part-card.locked:hover{transform:none;border-color:var(--border2);box-shadow:none}
+.part-card.newly-unlocked{animation:unlockPop .5s ease-out}
+@keyframes unlockPop{0%{transform:scale(1.08);border-color:var(--green);box-shadow:0 0 18px rgba(0,232,122,.4)}100%{transform:scale(1);}}
+
+.part-icon{
+  width:52px;height:52px;border-radius:8px;
+  background:#0a1628;border:1px solid var(--border2);
+  display:grid;place-items:center;overflow:visible;flex-shrink:0;
+}
+.part-icon svg{display:block;overflow:visible}
+
+.part-name{font-family:var(--font-ui);font-weight:800;font-size:13px;color:var(--text);line-height:1.2}
+.part-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px}
+.part-type-badge{
+  font-family:var(--font-hud);font-size:9px;letter-spacing:.06em;padding:2px 6px;
+  border-radius:3px;display:inline-block;margin-top:3px;
+}
+.badge-engine{background:rgba(255,106,0,.18);color:#ff9d55;border:1px solid rgba(255,106,0,.3)}
+.badge-fuel{background:rgba(66,180,255,.15);color:#7dd4ff;border:1px solid rgba(66,180,255,.25)}
+.badge-fin{background:rgba(0,232,122,.12);color:#55e8a0;border:1px solid rgba(0,232,122,.2)}
+.badge-nose{background:rgba(200,180,255,.12);color:#c8b4ff;border:1px solid rgba(200,180,255,.2)}
+.badge-orbiter{background:rgba(245,196,0,.12);color:#f5c400;border:1px solid rgba(245,196,0,.25)}
+
+.lock-tag{
+  position:absolute;top:6px;right:6px;
+  font-family:var(--font-mono);font-size:9px;color:var(--muted);
+  background:rgba(0,0,0,.4);padding:2px 5px;border-radius:3px;
+}
+
+/* ─── BUILDER STAGE ─── */
+.builder-wrap{flex:1;display:flex;flex-direction:column}
+.stage-panel{flex:1;display:flex;flex-direction:column;min-height:700px}
+.stage-toolbar{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+
+.stage{
+  flex:1;position:relative;
+  background:linear-gradient(180deg,#7ddcff 0%,#c2eeff 62%,#78b96a 62%,#4a7a41 100%);
+  overflow:hidden;min-height:560px;
+  isolation:isolate;
+}
+
+/* Sky clouds via pseudo */
+.stage::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 48px 18px at 18% 22%,rgba(255,255,255,.82) 0,transparent 100%),
+    radial-gradient(ellipse 36px 14px at 26% 24%,rgba(255,255,255,.75) 0,transparent 100%),
+    radial-gradient(ellipse 60px 22px at 72% 16%,rgba(255,255,255,.78) 0,transparent 100%),
+    radial-gradient(ellipse 40px 15px at 78% 18%,rgba(255,255,255,.7) 0,transparent 100%),
+    radial-gradient(ellipse 28px 11px at 85% 20%,rgba(255,255,255,.65) 0,transparent 100%),
+    linear-gradient(rgba(255,255,255,.06),rgba(5,20,42,.14));
+}
+
+/* Launch tower drawn via pseudo-element */
+.stage::after{
+  content:"";position:absolute;
+  left:50%;bottom:52px;width:560px;height:530px;
+  transform:translateX(-50%);
+  z-index:1;pointer-events:none;opacity:.9;
+  background:
+    linear-gradient(90deg,
+      #7b858c 0 8px,transparent 8px 42px,#7b858c 42px 50px,transparent 50px 145px,
+      transparent 145px 415px,
+      transparent 415px 510px,#7b858c 510px 518px,transparent 518px 552px,#7b858c 552px 560px),
+    repeating-linear-gradient(0deg,transparent 0 82px,#f5cf37 82px 116px,transparent 116px 158px),
+    repeating-linear-gradient(45deg,transparent 0 50px,rgba(27,45,57,.65) 50px 57px,transparent 57px 106px),
+    repeating-linear-gradient(135deg,transparent 0 50px,rgba(27,45,57,.65) 50px 57px,transparent 57px 106px);
+  -webkit-mask:linear-gradient(90deg,#000 0 150px,transparent 150px 410px,#000 410px 560px);
+  mask:linear-gradient(90deg,#000 0 150px,transparent 150px 410px,#000 410px 560px);
+}
+
+.dropzone{
+  position:absolute;left:50%;bottom:96px;
+  width:240px;height:520px;
+  transform:translateX(-50%);
+  z-index:2;
+  border:2px dashed rgba(255,255,255,.3);
+  border-radius:120px 120px 24px 24px;
+  background:rgba(255,255,255,.03);
+  pointer-events:none;
+}
+.pad{
+  position:absolute;left:50%;bottom:52px;
+  width:260px;height:42px;transform:translateX(-50%);
+  z-index:4;
+  background:linear-gradient(#747c82,#3e464b);
+  border:3px solid #2c343a;border-radius:10px 10px 3px 3px;
+  box-shadow:0 10px 0 #1c2327;
+}
+.rocket-mount{
+  position:absolute;left:50%;bottom:100px;
+  width:260px;overflow:visible;
+  transform:translateX(-50%);
+  z-index:8;
+  filter:drop-shadow(0 8px 7px rgba(0,0,0,.3));
+}
+.hint-tag{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  z-index:10;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.75);
+  background:rgba(5,17,31,.72);padding:6px 12px;border-radius:20px;
+  white-space:nowrap;pointer-events:none;
+}
+
+/* ─── ROCKET SEGMENTS ─── */
+.seg{
+  position:absolute;
+  overflow:visible;z-index:10;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.3));
+}
+.seg img{width:100%;height:100%;object-fit:fill;display:block;image-rendering:auto}
+
+/* ─── FINS ─── */
+.fin-el{position:absolute;z-index:12;overflow:visible;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
+.fin-el img{width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto}
+
+/* ─── STATS PANEL ─── */
+.stat-row{margin-bottom:10px}
+.stat-label{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+.stat-label b{color:var(--text)}
+.stat-bar{height:8px;border-radius:20px;background:rgba(0,0,0,.4);overflow:hidden;border:1px solid var(--border)}
+.stat-bar-fill{height:100%;border-radius:20px;transition:width .3s ease}
+.fill-thrust{background:linear-gradient(90deg,#ff6a00,#ff9d55)}
+.fill-stab{background:linear-gradient(90deg,#00e87a,#55e8a0)}
+.fill-aero{background:linear-gradient(90deg,#42b4ff,#90d8ff)}
+.fill-mass{background:linear-gradient(90deg,#a880ff,#c8a8ff)}
+
+.twr-readout{
+  font-family:var(--font-mono);font-size:12px;
+  background:var(--panel2);border:1px solid var(--border2);
+  border-radius:6px;padding:8px 10px;margin-top:8px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.twr-ok{color:var(--green)} .twr-warn{color:var(--accent)} .twr-bad{color:var(--red)}
+
+/* ─── BUILD LIST ─── */
+.build-list{display:flex;flex-direction:column;gap:5px;margin-top:6px;max-height:260px;overflow-y:auto}
+.build-chip{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  padding:7px 10px;border-radius:6px;
+  background:var(--panel2);border:1px solid var(--border2);
+  font-family:var(--font-mono);font-size:11px;
+}
+.build-chip b{color:var(--muted);font-weight:400}
+.build-chip .rm{
+  background:rgba(255,63,90,.15);border:1px solid rgba(255,63,90,.25);
+  color:var(--red);font-size:10px;padding:3px 7px;border-radius:4px;cursor:pointer;
+  font-family:var(--font-hud);letter-spacing:.04em;
+}
+.build-chip .rm:hover{background:rgba(255,63,90,.3)}
+
+/* ─── BUTTONS ─── */
+btn,button{font-family:var(--font-hud);font-size:11px;font-weight:700;letter-spacing:.06em;border:0;border-radius:7px;padding:9px 14px;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+.btn-primary{background:var(--accent);color:#0a0800;box-shadow:0 3px 0 rgba(0,0,0,.4),0 0 16px rgba(245,196,0,.3)}
+.btn-primary:hover:not(:disabled){box-shadow:0 3px 0 rgba(0,0,0,.4),0 0 24px rgba(245,196,0,.5)}
+.btn-danger{background:var(--red);color:white;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.btn-secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border2)}
+.btn-secondary:hover:not(:disabled){border-color:var(--muted)}
+.btn-launch{
+  background:linear-gradient(135deg,#ff6a00,#ff3f5a);
+  color:white;font-size:13px;padding:12px 22px;
+  box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 24px rgba(255,80,0,.35);
+  border-radius:8px;
+}
+.btn-launch:hover:not(:disabled){box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 36px rgba(255,80,0,.55)}
+
+/* ─── UNLOCK TOAST ─── */
+.unlock-toast{
+  position:fixed;top:70px;right:20px;z-index:200;
+  background:linear-gradient(135deg,#0f2a14,#162e1a);
+  border:2px solid var(--green);border-radius:10px;
+  padding:12px 18px;max-width:280px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 20px rgba(0,232,122,.2);
+  animation:toastIn .4s ease-out,toastOut .4s ease-in 3.2s forwards;
+  pointer-events:none;
+}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateX(110%)}}
+.unlock-toast-title{font-family:var(--font-hud);font-size:11px;letter-spacing:.1em;color:var(--green);margin-bottom:4px}
+.unlock-toast-name{font-family:var(--font-ui);font-size:14px;font-weight:800;color:var(--text)}
+.unlock-toast-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ─── PROGRESS BAR ─── */
+.progress-section{padding:0 14px 12px}
+.progress-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between}
+.progress-track{height:6px;border-radius:10px;background:rgba(0,0,0,.4);overflow:hidden}
+.progress-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease}
+
+/* ─── MILESTONE CHIPS ─── */
+.milestone-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 14px 12px}
+.ms-chip{
+  font-family:var(--font-mono);font-size:9px;padding:5px 7px;border-radius:5px;
+  border:1px solid var(--border);background:var(--panel2);color:var(--muted);
+  display:flex;align-items:center;gap:5px;
+}
+.ms-chip.reached{border-color:var(--green);color:var(--green);background:rgba(0,232,122,.07)}
+.ms-dot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0}
+.ms-chip.reached .ms-dot{background:var(--green);box-shadow:0 0 5px var(--green)}
+
+
+/* ════════════════════════════════
+   LAUNCH MODAL
+════════════════════════════════ */
+.launch-overlay{
+  position:fixed;inset:0;background:rgba(2,6,14,.95);
+  z-index:100;display:none;align-items:center;justify-content:center;padding:14px;
+}
+.launch-overlay.open{display:flex}
+.launch-modal{
+  width:min(1020px,97vw);background:#060e1c;
+  border:1px solid var(--border2);border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 100px rgba(0,0,0,.8);
+  display:flex;flex-direction:column;
+}
+
+#sky{display:block;width:100%;height:440px;background:#040c1a}
+
+.launch-controls{
+  display:grid;grid-template-columns:1.4fr repeat(5,auto);gap:10px;
+  padding:12px 14px;background:rgba(8,16,28,.98);border-top:1px solid var(--border);
+  align-items:center;
+}
+.mix-zone{display:flex;flex-direction:column;gap:5px}
+.mix-label{font-family:var(--font-hud);font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.meter{
+  height:24px;border-radius:20px;background:#040c1a;
+  border:1px solid var(--border2);position:relative;overflow:hidden;
+}
+.sweet-zone{position:absolute;left:42%;width:16%;top:0;bottom:0;background:rgba(0,232,122,.25)}
+.needle{position:absolute;top:0;bottom:0;width:3px;background:var(--accent);border-radius:2px;left:50%;transition:none;box-shadow:0 0 6px var(--accent)}
+
+.hud-strip{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+  background:rgba(4,10,20,.95);border-top:1px solid var(--border);
+}
+.hud-cell{
+  padding:7px 14px;border-right:1px solid var(--border);
+  font-family:var(--font-mono);font-size:11px;
+}
+.hud-cell:last-child{border-right:0}
+.hud-key{color:var(--muted);display:block;font-size:9px;letter-spacing:.08em;margin-bottom:2px}
+.hud-val{color:var(--text);font-size:13px}
+.hud-val.good{color:var(--green)} .hud-val.warn{color:var(--accent)} .hud-val.bad{color:var(--red)}
+
+.burn-track{height:10px;background:#040c1a;border-radius:0;position:relative;overflow:hidden}
+.burn-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .1s linear}
+
+.result-bar{
+  padding:10px 14px;background:rgba(4,10,20,.95);
+  font-family:var(--font-mono);font-size:12px;
+  min-height:60px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.result-icon{font-size:22px;flex-shrink:0}
+.result-bar .big{font-family:var(--font-hud);font-size:20px;color:var(--accent);letter-spacing:.05em}
+.result-bar .note{color:var(--muted);font-size:11px;line-height:1.5;margin-top:3px}
+.result-cue{color:var(--accent);font-size:12px}
+.stage-cue{color:var(--green)}
+.cue-bad{color:var(--red)}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1100px){
+  .app{grid-template-columns:260px 1fr}
+  .col:last-child{display:none}
+}
+@media(max-width:780px){
+  .app{grid-template-columns:1fr}
+  .stage{min-height:400px}
+  .launch-controls{grid-template-columns:1fr 1fr;gap:7px}
+  #sky{height:320px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 34 34" fill="none">
+      <path d="M17 3L21 13H29L22 19L24 30L17 24L10 30L12 19L5 13H13L17 3Z" fill="#f5c400" opacity=".15"/>
+      <path d="M17 2C17 2 13 14 5 17C13 20 17 32 17 32C17 32 21 20 29 17C21 14 17 2Z" fill="#f5c400"/>
+      <circle cx="17" cy="17" r="4" fill="#0a1628"/>
+    </svg>
+    <div>
+      <h1>SPACE LAUNCH</h1>
+      <div class="sub">ROCKET DESIGN SIMULATOR</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="best-badge" id="bestBadge">BEST: 0 m</div>
+    <button class="btn-launch" id="launchBtn">▶ LAUNCH</button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- LEFT: Part Library -->
+  <div class="col">
+    <div class="panel" style="flex:1">
+      <div class="panel-header">
+        <span>PART LIBRARY</span>
+        <span id="unlockedCount" style="color:var(--muted);font-size:10px"></span>
+      </div>
+      <div class="panel-body" style="padding-bottom:6px">
+        <div class="tabs" id="tabs"></div>
+        <div class="parts-scroll" id="parts"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Builder -->
+  <div class="col">
+    <div class="panel builder-wrap stage-panel">
+      <div class="panel-header">
+        <span>ROCKET ASSEMBLY</span>
+        <span style="color:var(--muted);font-size:10px" id="partCount">0 parts</span>
+      </div>
+      <div class="stage-toolbar">
+        <button class="btn-secondary" id="clearBtn">⊘ CLEAR</button>
+        <button class="btn-secondary" id="sampleBtn">⚡ SAMPLE BUILD</button>
+        <button class="btn-secondary" id="saveBtn">⬇ SAVE</button>
+        <button class="btn-secondary" id="loadBtn">⬆ LOAD</button>
+        <button class="btn-launch" id="launchBtn2">▶ LAUNCH</button>
+      </div>
+      <div class="stage" id="stage">
+        <div class="dropzone" id="dropzone"></div>
+        <div class="pad"></div>
+        <div class="rocket-mount" id="rocket"></div>
+        <div class="hint-tag" id="hint">Click a part or drag it here to build</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Stats -->
+  <div class="col">
+    <div class="panel">
+      <div class="panel-header">PERFORMANCE</div>
+      <div class="panel-body" id="stats"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span>MILESTONES</span>
+        <span id="msCount" style="color:var(--muted);font-size:10px">0 / 7</span>
+      </div>
+      <div class="progress-section">
+        <div class="progress-label"><span>ALTITUDE RECORD</span><span id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <div class="milestone-grid" id="milestoneGrid"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">CURRENT BUILD</div>
+      <div class="panel-body">
+        <div class="build-list" id="buildList"></div>
+        <p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6">Fly further to unlock more parts. T/W above 1.0 required for liftoff. Add fins for stability.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LAUNCH MODAL ═══════════════════ -->
+<div class="launch-overlay" id="launchOverlay">
+  <div class="launch-modal">
+    <canvas id="sky" width="1020" height="440"></canvas>
+    <div class="hud-strip">
+      <div class="hud-cell"><span class="hud-key">STAGE</span><span class="hud-val" id="hudStage">—</span></div>
+      <div class="hud-cell"><span class="hud-key">ALTITUDE</span><span class="hud-val" id="hudAlt">0 m</span></div>
+      <div class="hud-cell"><span class="hud-key">VELOCITY</span><span class="hud-val" id="hudSpeed">0 m/s</span></div>
+      <div class="hud-cell"><span class="hud-key">ZONE</span><span class="hud-val" id="hudZone">Launch Pad</span></div>
+      <div class="hud-cell"><span class="hud-key">T/W LIVE</span><span class="hud-val" id="hudTW">—</span></div>
+      <div class="hud-cell"><span class="hud-key">SCORE</span><span class="hud-val" id="hudScore">0</span></div>
+    </div>
+    <div class="burn-track"><div class="burn-fill" id="burnFill"></div></div>
+    <div class="launch-controls">
+      <div class="mix-zone">
+        <div class="mix-label">FUEL MIXTURE</div>
+        <div class="meter" id="mixMeter">
+          <div class="sweet-zone"></div>
+          <div class="needle" id="needle"></div>
+        </div>
+      </div>
+      <button class="btn-primary" id="commitBtn">IGNITE STAGE 1</button>
+      <button class="btn-secondary" id="nextBtn" disabled>NEXT STAGE</button>
+      <button class="btn-secondary" id="speedBtn">COAST 1×</button>
+      <button class="btn-secondary" id="coastBtn" disabled>COAST TO APOGEE</button>
+      <button class="btn-secondary" id="closeBtn">✕ CLOSE</button>
+    </div>
+    <div class="result-bar" id="resultBar">
+      <div class="result-icon">🚀</div>
+      <div>
+        <div class="result-cue">Time the ignition — hit <b>IGNITE</b> when the needle is in the green zone. Stage right after burnout for max altitude.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════════
+const ALL_PARTS = [
+  // ── ENGINES ──
+  {name:"Engine_1",pieceType:"EnginePiece",screenNameX:"Solid Fuel (lrg)",cardType:"THRUST",earnedAt:0,thrust:105000,burnTime:13,weight:900,weightFuel:2000,stability:0.4,dragCoeff:0.72},
+  {name:"Engine_2",pieceType:"EnginePiece",screenNameX:"Solid Fuel (med)",cardType:"THRUST",earnedAt:0,thrust:30000,burnTime:18,weight:400,weightFuel:600,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_6",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (med)",cardType:"THRUST",earnedAt:0,thrust:45500,burnTime:18,weight:450,weightFuel:1000,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_3",pieceType:"EnginePiece",screenNameX:"Solid Fuel (sml)",cardType:"THRUST",earnedAt:335000,thrust:10000,burnTime:22,weight:100,weightFuel:300,stability:0,dragCoeff:0.72},
+  {name:"Engine_7",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (lrg)",cardType:"THRUST",earnedAt:95000,thrust:280000,burnTime:13,weight:1900,weightFuel:4500,stability:0.4,dragCoeff:0.72},
+  {name:"Engine_9",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (lrg)",cardType:"THRUST",earnedAt:270000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
+  {name:"Engine_4",pieceType:"EnginePiece",screenNameX:"Magnetoplasma",cardType:"THRUST",earnedAt:380000,thrust:30000,burnTime:18,weight:400,weightFuel:600,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_10",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (med)",cardType:"THRUST",earnedAt:450000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_5",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (sml)",cardType:"THRUST",earnedAt:640000,thrust:20000,burnTime:24,weight:200,weightFuel:600,stability:0,dragCoeff:0.72},
+  {name:"Engine_8",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (sml)",cardType:"THRUST",earnedAt:625000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
+  {name:"Engine_11",pieceType:"EnginePiece",screenNameX:"Cow Power",cardType:"THRUST",earnedAt:590000,thrust:30000,burnTime:18,weight:300,weightFuel:400,stability:0.2,dragCoeff:0.72,zany:1},
+  {name:"Engine_12",pieceType:"EnginePiece",screenNameX:"Puppy Power",cardType:"THRUST",earnedAt:390000,thrust:18000,burnTime:22,weight:100,weightFuel:300,stability:0,dragCoeff:0.72,zany:1},
+  {name:"Engine_13",pieceType:"EnginePiece",screenNameX:"Circus Clown (lrg)",cardType:"THRUST",earnedAt:1700000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
+  {name:"Engine_14",pieceType:"EnginePiece",screenNameX:"Circus Clown (med)",cardType:"THRUST",earnedAt:1950000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_15",pieceType:"EnginePiece",screenNameX:"Circus Clown (sml)",cardType:"THRUST",earnedAt:3000000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
+  {name:"Engine_16",pieceType:"EnginePiece",screenNameX:"Hot Rod (sml)",cardType:"THRUST",earnedAt:3050000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
+  {name:"Engine_17",pieceType:"EnginePiece",screenNameX:"Hot Rod (med)",cardType:"THRUST",earnedAt:4250000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_18",pieceType:"EnginePiece",screenNameX:"Hot Rod (lrg)",cardType:"THRUST",earnedAt:4500000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
+  {name:"Engine_19",pieceType:"EnginePiece",screenNameX:"Bejeweled (med)",cardType:"THRUST",earnedAt:3750000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
+  {name:"Engine_20",pieceType:"EnginePiece",screenNameX:"Bejeweled (lrg)",cardType:"THRUST",earnedAt:4000000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
+  {name:"Engine_21",pieceType:"EnginePiece",screenNameX:"Bejeweled (sml)",cardType:"THRUST",earnedAt:4550000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
+  // ── FINS ──
+  {name:"Fin_1",pieceType:"FinPiece",screenNameX:"3×3 Fin",cardType:"STABILIZER",earnedAt:0,weight:10,stability:1.0},
+  {name:"Fin_2",pieceType:"FinPiece",screenNameX:"3×5 Fin",cardType:"STABILIZER",earnedAt:0,weight:15,stability:1.5},
+  {name:"Fin_3",pieceType:"FinPiece",screenNameX:"2×3 Fin",cardType:"STABILIZER",earnedAt:0,weight:10,stability:0.5},
+  {name:"Fin_4",pieceType:"FinPiece",screenNameX:"5×5 Fin",cardType:"STABILIZER",earnedAt:10000,weight:20,stability:1.5},
+  {name:"Fin_5",pieceType:"FinPiece",screenNameX:"6×3 Fin",cardType:"STABILIZER",earnedAt:70000,weight:15,stability:2.0},
+  {name:"Wing_1",pieceType:"FinPiece",screenNameX:"Dragon Wing",cardType:"STABILIZER",earnedAt:105000,weight:15,stability:1.5,zany:1},
+  {name:"Fin_7",pieceType:"FinPiece",screenNameX:"4×3 Fin",cardType:"STABILIZER",earnedAt:270000,weight:20,stability:2.0},
+  {name:"Fin_6",pieceType:"FinPiece",screenNameX:"Shark Fin",cardType:"STABILIZER",earnedAt:600000,weight:30,stability:3.0,zany:1},
+  // ── NOSE CONES ──
+  {name:"Nose_10",pieceType:"NosePiece",screenNameX:"Ogive Nose (lrg)",cardType:"NOSE",earnedAt:0,weight:20,stability:0,dragCoeff:0.7},
+  {name:"Nose_6",pieceType:"NosePiece",screenNameX:"Elliptical Nose (med)",cardType:"NOSE",earnedAt:0,weight:15,stability:0,dragCoeff:0.5},
+  {name:"Nose_2",pieceType:"NosePiece",screenNameX:"Clown Nose",cardType:"NOSE",earnedAt:20000,weight:5,stability:1,dragCoeff:0.5,zany:1},
+  {name:"Nose_7",pieceType:"NosePiece",screenNameX:"Elliptical Nose (lrg)",cardType:"NOSE",earnedAt:100000,weight:20,stability:0,dragCoeff:0.5},
+  {name:"Nose_9",pieceType:"NosePiece",screenNameX:"Ogive Nose (med)",cardType:"NOSE",earnedAt:200000,weight:10,stability:0,dragCoeff:0.7},
+  {name:"Nose_8",pieceType:"NosePiece",screenNameX:"Ogive Nose (sml)",cardType:"NOSE",earnedAt:305000,weight:5,stability:0,dragCoeff:0.7},
+  {name:"Nose_3",pieceType:"NosePiece",screenNameX:"Elliptical Nose (sml)",cardType:"NOSE",earnedAt:400000,weight:10,stability:0,dragCoeff:0.5},
+  {name:"Nose_1",pieceType:"NosePiece",screenNameX:"Conical Nose (sml)",cardType:"NOSE",earnedAt:470000,weight:5,stability:0,dragCoeff:0.6},
+  {name:"Nose_11",pieceType:"NosePiece",screenNameX:"Conical Nose (med)",cardType:"NOSE",earnedAt:560000,weight:10,stability:0,dragCoeff:0.6},
+  {name:"Nose_12",pieceType:"NosePiece",screenNameX:"Conical Nose (lrg)",cardType:"NOSE",earnedAt:680000,weight:10,stability:0,dragCoeff:0.6},
+  {name:"Nose_5",pieceType:"NosePiece",screenNameX:"Schnoz Nose",cardType:"NOSE",earnedAt:900000,weight:5,stability:0,dragCoeff:0.5,zany:1},
+  {name:"Nose_13",pieceType:"NosePiece",screenNameX:"Shark Nose",cardType:"NOSE",earnedAt:1150000,weight:20,stability:0,dragCoeff:0.6,zany:1},
+  {name:"Nose_4",pieceType:"NosePiece",screenNameX:"Jewel Nose",cardType:"NOSE",earnedAt:1600000,weight:20,stability:10,dragCoeff:0.5,zany:1},
+  // ── ORBITER / FUEL ──
+  {name:"Fuel_1",pieceType:"FuelPiece",screenNameX:"Fuel Tank (sml)",cardType:"ORBITER",earnedAt:800000,weight:1400,weightFuel:2000,burnTime:25,dragCoeff:0.5,stability:0},
+  {name:"Fuel_2",pieceType:"FuelPiece",screenNameX:"Fuel Tank (med)",cardType:"ORBITER",earnedAt:1000000,weight:2000,weightFuel:2600,burnTime:105,dragCoeff:0.5,stability:0},
+  {name:"Fuel_3",pieceType:"FuelPiece",screenNameX:"Fuel Tank (lrg)",cardType:"ORBITER",earnedAt:2000000,weight:2400,weightFuel:3000,burnTime:200,dragCoeff:0.5,stability:0},
+  {name:"SRB_1",pieceType:"SRBPiece",screenNameX:"SRB",cardType:"ORBITER",earnedAt:800000,thrust:200000,burnTime:20,weight:1500,weightFuel:700,stability:0},
+  {name:"SRB_2",pieceType:"SRBPiece",screenNameX:"Firecracker Booster",cardType:"ORBITER",earnedAt:2850000,thrust:90000,burnTime:20,weight:100,weightFuel:300,stability:0,zany:1},
+  {name:"SRB_3",pieceType:"SRBPiece",screenNameX:"Soda Pop Booster",cardType:"ORBITER",earnedAt:2550000,thrust:90000,burnTime:20,weight:100,weightFuel:300,stability:0,zany:1},
+  {name:"Orbiter_1",pieceType:"OrbiterPiece",screenNameX:"Orbiter",cardType:"ORBITER",earnedAt:800000,thrust:50000,burnTime:25,weight:900,weightFuel:300,stability:0},
+  {name:"Orbiter_2",pieceType:"OrbiterPiece",screenNameX:"School Bus",cardType:"ORBITER",earnedAt:1950000,thrust:1950,burnTime:30,weight:400,weightFuel:600,stability:0,zany:1},
+  {name:"Orbiter_3",pieceType:"OrbiterPiece",screenNameX:"Geodesic Orb",cardType:"ORBITER",earnedAt:2500000,thrust:2500,burnTime:30,weight:100,weightFuel:300,stability:0,zany:1},
+];
+
+const CATS = {THRUST:'Engines',STABILIZER:'Fins/Wings',NOSE:'Nose Cones',ORBITER:'Orbiter/Fuel'};
+const PHYSICS = {
+  thrustScale: 1.35,
+  apogeeAssistSpeed: 30,
+  moonDistance: 384400000,
+  orbitAltitude: 400000,
+};
+
+// Art mapping (original extracted Flash sprites)
+const PART_ART = {
+  Engine_1:'assets/img_1678_lossless.png',Engine_2:'assets/img_1678_lossless.png',
+  Engine_3:'assets/img_1510_lossless.png',Engine_4:'assets/img_1510_lossless.png',
+  Engine_5:'assets/img_1678_lossless.png',Engine_6:'assets/img_1678_lossless.png',
+  Engine_7:'assets/img_1678_lossless.png',Engine_8:'assets/img_1510_lossless.png',
+  Engine_9:'assets/img_1678_lossless.png',Engine_10:'assets/img_1678_lossless.png',
+  Engine_11:'assets/img_1678_lossless.png',Engine_12:'assets/img_1510_lossless.png',
+  Engine_13:'assets/img_1678_lossless.png',Engine_14:'assets/img_1678_lossless.png',
+  Engine_15:'assets/img_1510_lossless.png',Engine_16:'assets/img_1510_lossless.png',
+  Engine_17:'assets/img_1678_lossless.png',Engine_18:'assets/img_1678_lossless.png',
+  Engine_19:'assets/img_1678_lossless.png',Engine_20:'assets/img_1678_lossless.png',
+  Engine_21:'assets/img_1510_lossless.png',
+  Fuel_1:'assets/img_1504_lossless.png',Fuel_2:'assets/img_1501_lossless.png',Fuel_3:'assets/img_1498_lossless.png',
+  SRB_1:'assets/img_1688_lossless.png',SRB_2:'assets/img_1688_lossless.png',SRB_3:'assets/img_1688_lossless.png',
+  Orbiter_1:'assets/img_1688_lossless.png',Orbiter_2:'assets/img_1770_lossless.png',Orbiter_3:'assets/img_20_jpeg3.png',
+  Fin_1:'assets/img_514_lossless.png',Fin_2:'assets/img_1680_lossless.png',
+  Fin_3:'assets/img_174_lossless.png',Fin_4:'assets/img_514_lossless.png',
+  Fin_5:'assets/img_519_lossless.png',Fin_6:'assets/img_1826_lossless.png',
+  Fin_7:'assets/img_195_lossless.png',Wing_1:'assets/img_2027_lossless.png',
+  Nose_1:'assets/img_1507_lossless.png',Nose_2:'assets/img_1685_lossless.png',
+  Nose_3:'assets/img_1507_lossless.png',Nose_4:'assets/img_1685_lossless.png',
+  Nose_5:'assets/img_1685_lossless.png',Nose_6:'assets/img_1685_lossless.png',
+  Nose_7:'assets/img_1685_lossless.png',Nose_8:'assets/img_1507_lossless.png',
+  Nose_9:'assets/img_1685_lossless.png',Nose_10:'assets/img_1685_lossless.png',
+  Nose_11:'assets/img_1685_lossless.png',Nose_12:'assets/img_1685_lossless.png',
+  Nose_13:'assets/img_1685_lossless.png',
+};
+
+// ── SVG icon generator — no external assets needed ──
+function partSVG(p, w=44, h=44){
+  const t = p.pieceType;
+  const cx=w/2, cy=h/2;
+
+  // Color palette per engine type
+  let bodyFill='#d0d4d8', accentFill='#cc1f28', nozzleFill='#6a7278';
+  if(p.name.startsWith('Engine_')){
+    const n=parseInt(p.name.split('_')[1]);
+    if(p.screenNameX.includes('Liquid')){bodyFill='#b8d4f0';accentFill='#1a6abf';nozzleFill='#4a8ac4';}
+    else if(p.screenNameX.includes('Hybrid')){bodyFill='#d4e8b8';accentFill='#3a8a28';nozzleFill='#5aaa48';}
+    else if(p.screenNameX.includes('Magneto')){bodyFill='#d8c8f8';accentFill='#6a28cc';nozzleFill='#8a48dc';}
+    else if(p.zany){bodyFill='#f8e0b0';accentFill='#cc7a10';nozzleFill='#e8a030';}
+  }
+
+  if(t==='EnginePiece'){
+    // Body cylinder + red band + nozzle bell
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="eg${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#888d92"/>
+          <stop offset="20%" stop-color="${bodyFill}"/>
+          <stop offset="55%" stop-color="#c8cdd0"/>
+          <stop offset="80%" stop-color="#f0f2f0"/>
+          <stop offset="100%" stop-color="#7a8288"/>
+        </linearGradient>
+        <linearGradient id="nz${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#3a4248"/>
+          <stop offset="45%" stop-color="${nozzleFill}"/>
+          <stop offset="100%" stop-color="#282e34"/>
+        </linearGradient>
+      </defs>
+      <!-- body -->
+      <rect x="6" y="6" width="${w-12}" height="${h*0.48}" rx="4" fill="url(#eg${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- red stripe -->
+      <rect x="7" y="${h*0.3}" width="${w-14}" height="4" fill="${accentFill}" stroke="rgba(255,255,255,.3)" stroke-width=".5"/>
+      <!-- nozzle bell -->
+      <polygon points="${cx-8},${h*0.54} ${cx+8},${h*0.54} ${cx+14},${h-4} ${cx-14},${h-4}"
+        fill="url(#nz${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- nozzle throat -->
+      <ellipse cx="${cx}" cy="${h*0.54}" rx="8" ry="3" fill="#1a2028" stroke="#0a0e12" stroke-width="1"/>
+    </svg>`;
+  }
+
+  if(t==='FuelPiece'){
+    const tankH=h*0.78, tankY=(h-tankH)/2;
+    let liqColor='#4ab4e8', liqBg='#1a3050';
+    if(p.name==='Fuel_2'){liqColor='#60d488';liqBg='#0e2a18';}
+    if(p.name==='Fuel_3'){liqColor='#e880a8';liqBg='#301828';}
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="tg${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#888d92"/>
+          <stop offset="22%" stop-color="#e0e4e8"/>
+          <stop offset="60%" stop-color="#c4c8cc"/>
+          <stop offset="82%" stop-color="#f4f6f4"/>
+          <stop offset="100%" stop-color="#787e84"/>
+        </linearGradient>
+      </defs>
+      <!-- tank body -->
+      <rect x="7" y="${tankY}" width="${w-14}" height="${tankH}" rx="5" fill="${liqBg}" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- fuel fill (full) -->
+      <rect x="8.5" y="${tankY+1.5}" width="${w-17}" height="${tankH*0.88}" rx="3.5" fill="${liqColor}" opacity=".7"/>
+      <!-- sheen -->
+      <rect x="8.5" y="${tankY+1.5}" width="${w-17}" height="${tankH*0.88}" rx="3.5"
+        fill="url(#tg${p.name})" opacity=".45"/>
+      <!-- top cap -->
+      <rect x="11" y="${tankY-3}" width="${w-22}" height="5" rx="2" fill="#a0a8b0" stroke="#1a1f24" stroke-width="1"/>
+      <!-- bottom fitting -->
+      <rect x="14" y="${tankY+tankH-1}" width="${w-28}" height="5" rx="2" fill="#8a9098" stroke="#1a1f24" stroke-width="1"/>
+    </svg>`;
+  }
+
+  if(t==='NosePiece'){
+    let tipColor='#cc1f28';
+    if(p.screenNameX.includes('Ogive')){tipColor='#cc6818';}
+    if(p.screenNameX.includes('Clown')){tipColor='#e82878';}
+    if(p.screenNameX.includes('Jewel')){tipColor='#7828cc';}
+    if(p.screenNameX.includes('Schnoz')||p.screenNameX.includes('Shark')){tipColor='#286acc';}
+    const noseW=w-10;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ng${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#888d92"/>
+          <stop offset="25%" stop-color="#e4e8e8"/>
+          <stop offset="55%" stop-color="#c4c8c8"/>
+          <stop offset="82%" stop-color="#f6f8f6"/>
+          <stop offset="100%" stop-color="#787e84"/>
+        </linearGradient>
+      </defs>
+      <!-- cone body -->
+      <polygon points="${cx},4 ${cx+noseW/2},${h-6} ${cx-noseW/2},${h-6}"
+        fill="url(#ng${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- tip color -->
+      <polygon points="${cx},4 ${cx+noseW*.22},${h*0.36} ${cx-noseW*.22},${h*0.36}"
+        fill="${tipColor}" opacity=".9"/>
+      <!-- base ring -->
+      <rect x="${cx-noseW/2}" y="${h-8}" width="${noseW}" height="5" rx="2"
+        fill="#8a9098" stroke="#1a1f24" stroke-width="1"/>
+    </svg>`;
+  }
+
+  if(t==='FinPiece'){
+    let finColor='#7a8288', rivetColor='#555c62';
+    if(p.screenNameX.includes('Dragon')){finColor='#8a2828';rivetColor='#cc4040';}
+    if(p.screenNameX.includes('Shark')){finColor='#284888';rivetColor='#4878c8';}
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="fg${p.name}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="${finColor}" stop-opacity=".7"/>
+          <stop offset="100%" stop-color="${finColor}"/>
+        </linearGradient>
+      </defs>
+      <!-- fin plate -->
+      <polygon points="4,${h-4} ${w-4},${h-4} ${w-10},8 10,14"
+        fill="url(#fg${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- rivets -->
+      <circle cx="12" cy="${h-12}" r="2.5" fill="${rivetColor}"/>
+      <circle cx="22" cy="${h-12}" r="2.5" fill="${rivetColor}"/>
+      <circle cx="32" cy="${h-12}" r="2.5" fill="${rivetColor}"/>
+      <circle cx="17" cy="${h-22}" r="2.5" fill="${rivetColor}"/>
+      <circle cx="27" cy="${h-22}" r="2.5" fill="${rivetColor}"/>
+    </svg>`;
+  }
+
+  if(t==='SRBPiece'){
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sg${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#788088"/>
+          <stop offset="30%" stop-color="#dce0e0"/>
+          <stop offset="70%" stop-color="#b8bcbc"/>
+          <stop offset="100%" stop-color="#686e74"/>
+        </linearGradient>
+      </defs>
+      <!-- SRB body — tall slim cylinder -->
+      <rect x="10" y="4" width="${w-20}" height="${h-14}" rx="5" fill="url(#sg${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- red band -->
+      <rect x="11" y="${h*0.4}" width="${w-22}" height="4" fill="#cc1f28"/>
+      <!-- nose cap -->
+      <ellipse cx="${cx}" cy="6" rx="${(w-20)/2}" ry="5" fill="#a0a8b0" stroke="#1a1f24" stroke-width="1.2"/>
+      <!-- nozzle -->
+      <polygon points="${cx-8},${h-10} ${cx+8},${h-10} ${cx+6},${h-2} ${cx-6},${h-2}"
+        fill="#4a5258" stroke="#1a1f24" stroke-width="1.2"/>
+    </svg>`;
+  }
+
+  if(t==='OrbiterPiece'){
+    let wingColor='#889098', bodyColor='#c8d0d8';
+    if(p.screenNameX.includes('Bus')){wingColor='#e8c010';bodyColor='#f8e840';}
+    if(p.screenNameX.includes('Geo')){wingColor='#40a8e0';bodyColor='#80d0f8';}
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="og${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#7a8290"/>
+          <stop offset="35%" stop-color="${bodyColor}"/>
+          <stop offset="70%" stop-color="#b0b8c0"/>
+          <stop offset="100%" stop-color="#6a7280"/>
+        </linearGradient>
+      </defs>
+      <!-- wings -->
+      <polygon points="2,${h-10} 14,${h*.35} 16,${h-10}" fill="${wingColor}" stroke="#1a1f24" stroke-width="1.2"/>
+      <polygon points="${w-2},${h-10} ${w-14},${h*.35} ${w-16},${h-10}" fill="${wingColor}" stroke="#1a1f24" stroke-width="1.2"/>
+      <!-- fuselage -->
+      <rect x="10" y="8" width="${w-20}" height="${h-18}" rx="6" fill="url(#og${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- windows -->
+      <circle cx="${cx-6}" cy="${h*.4}" r="3" fill="#88c8f0" stroke="#1a1f24" stroke-width="1"/>
+      <circle cx="${cx+6}" cy="${h*.4}" r="3" fill="#88c8f0" stroke="#1a1f24" stroke-width="1"/>
+    </svg>`;
+  }
+
+  // fallback
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect x="4" y="4" width="${w-8}" height="${h-8}" rx="4" fill="#3a4858" stroke="#6a7888" stroke-width="1.5"/></svg>`;
+}
+// Keep artFor for canvas fallback but icons are all SVG now
+function artFor(p){ return PART_ART[p.name] || 'assets/img_1678_lossless.png'; }
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let activeTab = 'THRUST';
+let build = {stack:[], fins:[], nose:null};
+let best = Number(localStorage.getItem('slBest')||0);
+let unlockedBest = Number(localStorage.getItem('slUnlockedBest')||best); // tracks what was unlocked at
+
+const MILESTONES = [
+  {alt:1000,      label:'1 km',       icon:'🌄'},
+  {alt:10000,     label:'10 km',      icon:'✈️'},
+  {alt:100000,    label:'100 km',     icon:'🌐'},
+  {alt:400000,    label:'Orbit',      icon:'🛰️'},
+  {alt:10000000,  label:'10,000 km',  icon:'🌙'},
+  {alt:100000000, label:'100,000 km', icon:'⭐'},
+  {alt:384400000, label:'Moon!',      icon:'🌑'},
+];
+let reachedMilestones = JSON.parse(localStorage.getItem('slMilestones')||'[]');
+
+// ══════════════════════════════════════════════════════════════
+//  UNLOCK SYSTEM
+// ══════════════════════════════════════════════════════════════
+function isUnlocked(p){ return (p.earnedAt||0) <= best; }
+function getPart(id){ return ALL_PARTS.find(p=>p.name===id); }
+
+function checkNewUnlocks(prevBest, newBest){
+  const newly = ALL_PARTS.filter(p=>(p.earnedAt||0)>prevBest && (p.earnedAt||0)<=newBest);
+  newly.forEach((p,i)=>setTimeout(()=>showUnlockToast(p), i*800));
+  return newly;
+}
+
+function showUnlockToast(p){
+  const t = document.createElement('div');
+  t.className='unlock-toast';
+  const badge = typeBadge(p);
+  t.innerHTML=`<div class="unlock-toast-title">🔓 PART UNLOCKED</div>
+    <div class="unlock-toast-name">${p.screenNameX}</div>
+    <div class="unlock-toast-sub">${badge} · Earned at ${formatDistance(p.earnedAt)}</div>`;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3700);
+  // flash the part in the list if visible
+  setTimeout(()=>{
+    const el = document.querySelector(`.part-card[data-id="${p.name}"]`);
+    if(el) el.classList.add('newly-unlocked');
+  }, 200);
+}
+
+function typeBadge(p){
+  const map={EnginePiece:'ENGINE',FuelPiece:'FUEL TANK',SRBPiece:'BOOSTER',OrbiterPiece:'ORBITER',FinPiece:'STABILIZER',NosePiece:'NOSE CONE'};
+  return map[p.pieceType]||p.pieceType;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PART LIBRARY UI
+// ══════════════════════════════════════════════════════════════
+function initTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML='';
+  Object.entries(CATS).forEach(([k,v])=>{
+    const b=document.createElement('button');
+    b.className='tab'+(k===activeTab?' active':'');
+    b.textContent=v;
+    b.onclick=()=>{activeTab=k;initTabs();renderParts()};
+    tabs.appendChild(b);
+  });
+}
+
+function renderParts(){
+  const el=document.getElementById('parts');
+  el.innerHTML='';
+  const list=ALL_PARTS
+    .filter(p=>p.cardType===activeTab)
+    .sort((a,b)=>(a.earnedAt||0)-(b.earnedAt||0));
+
+  const unlocked=list.filter(p=>isUnlocked(p));
+  const locked=list.filter(p=>!isUnlocked(p));
+  const sorted=[...unlocked,...locked];
+
+  sorted.forEach(p=>{
+    const card=document.createElement('div');
+    card.className='part-card'+(isUnlocked(p)?'':' locked');
+    card.dataset.id=p.name;
+    card.draggable=isUnlocked(p);
+    const badgeCls = {EnginePiece:'badge-engine',FuelPiece:'badge-fuel',FinPiece:'badge-fin',NosePiece:'badge-nose',SRBPiece:'badge-orbiter',OrbiterPiece:'badge-orbiter'}[p.pieceType]||'badge-engine';
+    const statLine = p.pieceType==='EnginePiece'
+      ? `thrust ${(p.thrust/1000).toFixed(0)}kN · burn ${p.burnTime}s · mass ${p.weight}kg`
+      : p.pieceType==='FinPiece'
+      ? `stability +${p.stability} · weight ${p.weight}kg`
+      : p.pieceType==='NosePiece'
+      ? `drag ${p.dragCoeff||'?'} · weight ${p.weight}kg`
+      : `mass ${p.weight||0}kg · fuel ${p.weightFuel||0}kg`;
+    card.innerHTML=`
+      <div class="part-icon">${partSVG(p,44,44)}</div>
+      <div>
+        <div class="part-name">${p.screenNameX}</div>
+        <div class="part-meta">${statLine}</div>
+        <span class="part-type-badge ${badgeCls}">${typeBadge(p)}</span>
+      </div>
+      ${!isUnlocked(p)?`<div class="lock-tag">🔒 ${formatDistance(p.earnedAt)}</div>`:''}
+    `;
+    if(isUnlocked(p)){
+      card.onclick=()=>addPart(p.name);
+      card.ondragstart=e=>e.dataTransfer.setData('text/plain',p.name);
+    } else {
+      card.title=`Unlock at ${formatDistance(p.earnedAt)} altitude`;
+    }
+    el.appendChild(card);
+  });
+
+  const unlockedCount=ALL_PARTS.filter(p=>isUnlocked(p)).length;
+  document.getElementById('unlockedCount').textContent=`${unlockedCount}/${ALL_PARTS.length} parts`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BUILD MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+function addPart(id){
+  const p=getPart(id); if(!p||!isUnlocked(p))return;
+  if(p.pieceType==='NosePiece') build.nose=id;
+  else if(p.pieceType==='FinPiece'){
+    if(build.fins.length>=4) build.fins.shift();
+    build.fins.push(id);
+  } else {
+    build.stack.push(id);
+  }
+  renderAll();
+}
+
+function clearBuild(){ build={stack:[],fins:[],nose:null}; renderAll(); }
+
+function buildSample(){
+  // Engine at bottom → fuel tank above → nose cone on top, fins flanking engine
+  build={nose:'Nose_6', stack:['Engine_1','Fuel_2'], fins:['Fin_1','Fin_1']};
+  renderAll();
+}
+
+// ── Drag-drop onto stage ──
+document.getElementById('dropzone').addEventListener('dragover',e=>e.preventDefault());
+document.getElementById('dropzone').addEventListener('drop',e=>{e.preventDefault();addPart(e.dataTransfer.getData('text/plain'))});
+document.getElementById('stage').addEventListener('dragover',e=>e.preventDefault());
+document.getElementById('stage').addEventListener('drop',e=>{e.preventDefault();addPart(e.dataTransfer.getData('text/plain'))});
+
+// ══════════════════════════════════════════════════════════════
+//  PHYSICS / METRICS
+// ══════════════════════════════════════════════════════════════
+function metrics(){
+  let all=[...build.stack,...build.fins];
+  if(build.nose) all.push(build.nose);
+  let weight=0,fuel=0,thrust=0,burn=0,stab=0,drag=0.72;
+  all.map(getPart).filter(Boolean).forEach(p=>{
+    weight+=(p.weight||0)+(p.weightFuel||0);
+    fuel+=(p.weightFuel||0);
+    thrust+=(p.thrust||0);
+    burn=Math.max(burn,p.burnTime||0);
+    stab+=(p.stability||0);
+    if(p.dragCoeff) drag=Math.min(drag,p.dragCoeff);
+  });
+  if(!build.nose) drag+=.25;
+  if(build.fins.length<2) stab-=1.5;
+  const twr=(thrust*PHYSICS.thrustScale)/Math.max(weight*9.80665,1);
+  const aero=Math.max(0,Math.min(100,(1.1-drag)*120));
+  const stability=Math.max(0,Math.min(100,stab*18));
+  const power=Math.max(0,Math.min(100,twr*45));
+  return {weight,fuel,thrust,burn,stab,drag,twr,aero,stability,power};
+}
+
+function gravityAtAltitude(alt){
+  const R=6371000;
+  return 9.80665*Math.pow(R/(R+Math.max(0,alt)),2);
+}
+
+function buildStages(){
+  const stack=build.stack.map((id,idx)=>({id,idx,part:getPart(id)})).filter(x=>x.part);
+  const stages=[]; let current=null;
+  for(const item of stack){
+    const p=item.part;
+    if((p.thrust||0)>0){
+      current={
+        part:p,index:stages.length+1,stackIndex:item.idx,parts:[p],partIds:[item.id],
+        thrust:p.thrust||0,burn:Math.max(4,p.burnTime||10),remaining:Math.max(4,p.burnTime||10),
+        ignited:false,spent:false,separated:false,quality:1,
+        fuelMass:p.weightFuel||0,dryMass:p.weight||0,totalMass:(p.weight||0)+(p.weightFuel||0)
+      };
+      stages.push(current);
+    } else if(current){
+      current.parts.push(p); current.partIds.push(item.id);
+      current.fuelMass+=(p.weightFuel||0);
+      current.dryMass+=(p.weight||0);
+      current.totalMass+=(p.weight||0)+(p.weightFuel||0);
+      if(p.pieceType==='FuelPiece') current.burn=Math.max(current.burn,Math.min(28,8+(p.weightFuel||0)/220));
+      current.remaining=current.burn;
+    }
+  }
+  stages.forEach(stage=>{
+    const extraFuel=stage.parts.slice(1).reduce((sum,p)=>sum+(p.weightFuel||0),0);
+    stage.burn=Math.max(4,Math.min(45,(stage.part.burnTime||10)+extraFuel/900));
+    stage.remaining=stage.burn;
+  });
+  return stages;
+}
+
+function stageDryMass(s){ return s?s.parts.reduce((sum,p)=>sum+(p.weight||0),0):0; }
+function stageFuelMass(s){ return s?s.parts.reduce((sum,p)=>sum+(p.weightFuel||0),0):0; }
+
+// Returns 0..1: how full a fuel-bearing part's tank is right now (for visual shrink)
+function fuelRatioForPart(partId){
+  if(!launchState) return 1;
+  // Find which stage this part belongs to
+  for(const s of launchState.stages){
+    if(s.partIds && s.partIds.includes(partId)){
+      if(!s.ignited) return 1;            // not yet burning — full
+      if(s.spent) return 0;               // burned out — empty
+      return Math.max(0, s.remaining / s.burn); // live burn fraction
+    }
+  }
+  return 1; // not in any stage (fins, nose, etc.) — doesn't deplete
+}
+
+function stackMassForFlight(){
+  const ids=[...build.stack,...build.fins]; if(build.nose)ids.push(build.nose);
+  let base=0; ids.map(getPart).filter(Boolean).forEach(p=>{base+=(p.weight||0)+(p.weightFuel||0);});
+  if(!launchState) return {total:base};
+  let burnedFuel=0, droppedMass=0;
+  launchState.stages.forEach(s=>{
+    const totalFuel=stageFuelMass(s);
+    const burnFrac=(s.burn-s.remaining)/Math.max(.001,s.burn);
+    burnedFuel+=burnFrac*totalFuel;
+    if(s.separated) droppedMass+=stageDryMass(s)+Math.max(0,totalFuel-burnFrac*totalFuel);
+  });
+  return {total:Math.max(90,base-burnedFuel-droppedMass)};
+}
+
+function liveRocketParts(){
+  if(!launchState) return [...build.stack].map(getPart).filter(Boolean);
+  const stage=launchState.stages[Math.max(0,launchState.current)]||launchState.stages[0];
+  const startIndex=stage?stage.stackIndex:0;
+  const ids=build.stack.slice(startIndex);
+  if(build.nose) ids.push(build.nose);
+  return ids.map(getPart).filter(Boolean);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ROCKET BUILDER RENDERER
+//  Real sprite dimensions from extracted Flash assets.
+//  Stack is bottom-up: engines at base, fuel above, nose on top.
+//  Engines are landscape (wide nozzle flange). Scale everything
+//  to a consistent rocket width of ~90px so it reads as one object.
+// ══════════════════════════════════════════════════════════════
+
+// Target rendered width for the rocket body column
+const ROCKET_BODY_W = 90;
+
+// Per-part natural aspect ratios from the real sprites.
+// We render every part at ROCKET_BODY_W wide and scale height to match.
+const SPRITE_DIMS = {
+  // engines: 50×34, 46×33 (landscape) → render at body width, height scaled
+  EnginePiece: {nw:50, nh:34},
+  // fuel tanks: various portrait shapes
+  Fuel_1: {nw:45, nh:64},
+  Fuel_2: {nw:76, nh:69},
+  Fuel_3: {nw:111,nh:120},
+  FuelPiece: {nw:76, nh:69},   // fallback
+  SRBPiece:  {nw:85, nh:75},
+  OrbiterPiece:{nw:85,nh:75},
+  // nose cones: portrait
+  NosePiece: {nw:49, nh:80},
+};
+
+function spriteDims(p) {
+  const named = SPRITE_DIMS[p.name] || SPRITE_DIMS[p.pieceType] || {nw:76,nh:69};
+  // Scale so rendered width = ROCKET_BODY_W
+  const scale = ROCKET_BODY_W / named.nw;
+  return { w: ROCKET_BODY_W, h: Math.round(named.nh * scale) };
+}
+
+// Fins have their own sizing — don't stretch to body width
+function finDims(p) {
+  const MAP = {
+    Fin_1:{nw:57,nh:56}, Fin_2:{nw:88,nh:39}, Fin_3:{nw:26,nh:34},
+    Fin_5:{nw:66,nh:36}, Fin_6:{nw:78,nh:219},Fin_7:{nw:37,nh:56},
+    Wing_1:{nw:103,nh:62},
+  };
+  const d = MAP[p.name] || {nw:57,nh:56};
+  // Cap fin display height at 70px, scale width to match
+  const maxH = 70;
+  const scale = Math.min(1.2, maxH / d.nh);
+  return { w: Math.round(d.nw * scale), h: Math.round(d.nh * scale) };
+}
+
+function spriteImg(p, w, h, extraStyle='') {
+  const src = 'assets/' + (PART_ART[p.name] || 'img_1678_lossless.png').replace('assets/','');
+  return `<img src="${src}" alt="${p.screenNameX}"
+    style="width:${w}px;height:${h}px;object-fit:fill;display:block;image-rendering:pixelated;${extraStyle}"
+    onerror="this.replaceWith(document.createRange().createContextualFragment(\`${partSVG(p,w,h).replace(/`/g,"'")}\`))">`;
+}
+
+// ── Procedural cowling: bridges the engine bell to the body above it ──
+// engineW = rendered width of the engine sprite (the nozzle flare end)
+// bodyW   = rendered width of the segment immediately above
+// returns an SVG string for a tapered adapter that fills the gap
+function cowlingSVG(engineW, bodyW, h) {
+  const W = Math.max(engineW, bodyW);
+  // The cowling tapers: bottom edge = engineW (top of nozzle cylinder ~60% of sprite width)
+  // top edge = bodyW (matches the tank/orbiter above)
+  const botW = engineW * 0.62;  // engine body cylinder is ~62% of nozzle sprite width
+  const topW = bodyW * 0.96;    // nearly full width at top
+  const botX = (W - botW) / 2;
+  const topX = (W - topW) / 2;
+  return `<svg width="${W}" height="${h}" viewBox="0 0 ${W} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cwl" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%"   stop-color="#888d92"/>
+        <stop offset="18%"  stop-color="#e8eae8"/>
+        <stop offset="55%"  stop-color="#c4c8c4"/>
+        <stop offset="80%"  stop-color="#f4f6f4"/>
+        <stop offset="100%" stop-color="#787e84"/>
+      </linearGradient>
+    </defs>
+    <!-- taper body -->
+    <polygon points="${topX},0 ${topX+topW},0 ${botX+botW},${h} ${botX},${h}"
+      fill="url(#cwl)" stroke="#1a1f24" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- red stripe near top -->
+    <rect x="${topX+1}" y="${h*0.18}" width="${topW-2}" height="${h*0.14}" fill="#cc1f28" opacity=".9"/>
+    <!-- subtle highlight -->
+    <polygon points="${topX},0 ${topX+topW*0.22},0 ${botX+botW*0.18},${h} ${botX},${h}"
+      fill="rgba(255,255,255,0.18)"/>
+  </svg>`;
+}
+
+function renderRocket(){
+  const mount = document.getElementById('rocket');
+  mount.innerHTML = '';
+
+  // Build ordered segment list: stack bottom→up, then nose at top
+  const segs = [];
+  [...build.stack].forEach(id => { const p=getPart(id); if(p) segs.push(p); });
+  if(build.nose) { const p=getPart(build.nose); if(p) segs.push(p); }
+
+  // Find the bottom-most engine for fin attachment
+  const firstEngineIdx = segs.findIndex(p => p.pieceType==='EnginePiece');
+
+  let y = 0;
+  const positions = [];   // {p, y, h, w, vi}
+  const COWL_H = 28;      // height of each auto-inserted cowling segment
+
+  segs.forEach((p, vi) => {
+    const {w, h} = spriteDims(p);
+    const d = document.createElement('div');
+    d.className = 'seg';
+    d.style.cssText = `width:${w}px;height:${h}px;bottom:${y}px;left:50%;margin-left:${-w/2}px;`;
+    d.innerHTML = spriteImg(p, w, h);
+    mount.appendChild(d);
+    positions.push({p, y, h, w, vi});
+
+    // ── Insert cowling above every engine that has a segment above it ──
+    const nextPart = segs[vi + 1];
+    if (p.pieceType === 'EnginePiece' && nextPart) {
+      const nextDims = spriteDims(nextPart);
+      // SVG cowl is as wide as the wider of the two parts
+      const cowlW = Math.max(w, nextDims.w);
+      const cowlBottom = y + h - 4;   // overlaps engine top by 4px
+      const cowlDiv = document.createElement('div');
+      cowlDiv.className = 'seg';
+      cowlDiv.style.cssText = `width:${cowlW}px;height:${COWL_H}px;bottom:${cowlBottom}px;`
+        + `left:50%;margin-left:${-cowlW/2}px;z-index:9;`;
+      cowlDiv.innerHTML = cowlingSVG(w, nextDims.w, COWL_H);
+      mount.appendChild(cowlDiv);
+      // Cowling takes vertical space; next segment stacks above it
+      y += h - 4 + COWL_H - 4;
+    } else {
+      y += h - 4;
+    }
+  });
+
+  // ── Fins: anchor to the bottom engine, flanking it ──
+  const engPos = positions[firstEngineIdx] || positions[0];
+  if(build.fins.length && engPos) {
+    build.fins.slice(0, 4).forEach((id, i) => {
+      const fp = getPart(id); if(!fp) return;
+      const {w:fw, h:fh} = finDims(fp);
+      const isLeft = i % 2 === 0;
+      const pair = Math.floor(i / 2);
+      const f = document.createElement('div');
+      f.className = 'fin-el';
+
+      // Fins top-align with the engine top, extending downward
+      const finBottom = Math.max(0, engPos.y + engPos.h - fh);
+
+      const mountW = 260;
+      const engineLeft  = mountW/2 - engPos.w/2;
+      const engineRight = mountW/2 + engPos.w/2;
+      const leftX  = engineLeft  - fw + 12;
+      const rightX = engineRight - 12;
+
+      f.style.cssText = `width:${fw}px;height:${fh}px;`
+        + `bottom:${finBottom + pair * 6}px;`
+        + `left:${isLeft ? leftX : rightX}px;`
+        + (isLeft ? '' : 'transform:scaleX(-1);transform-origin:0 50%;');
+      f.innerHTML = spriteImg(fp, fw, fh);
+      mount.appendChild(f);
+    });
+  }
+
+  const total = build.stack.length + build.fins.length + (build.nose ? 1 : 0);
+  document.getElementById('partCount').textContent = `${total} part${total!==1?'s':''}`;
+  document.getElementById('hint').style.display = total > 0 ? 'none' : 'block';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  STATS PANEL
+// ══════════════════════════════════════════════════════════════
+function bar(label,pct,val,cls){
+  return `<div class="stat-row">
+    <div class="stat-label"><span>${label}</span><b>${val}</b></div>
+    <div class="stat-bar"><div class="stat-bar-fill ${cls}" style="width:${Math.max(0,Math.min(100,pct))}%"></div></div>
+  </div>`;
+}
+function renderStats(){
+  const m=metrics();
+  const twrClass=m.twr<1?'twr-bad':(m.twr<1.4?'twr-warn':'twr-ok');
+  const twrText=m.twr<1?'Too heavy!':(m.twr<1.2?'Barely lifts':(m.twr<1.6?'Workable':'Strong'));
+  document.getElementById('stats').innerHTML=
+    bar('THRUST POWER',m.power,Math.round(m.thrust/1000)+'kN','fill-thrust')+
+    bar('STABILITY',m.stability,Math.round(m.stability)+'%','fill-stab')+
+    bar('AERODYNAMICS',m.aero,Math.round(m.aero)+'%','fill-aero')+
+    bar('LOADED MASS',Math.min(100,Math.log10(m.weight+1)/5*100),Math.round(m.weight).toLocaleString()+'kg','fill-mass')+
+    `<div class="twr-readout"><span>THRUST/WEIGHT</span><b class="${twrClass}">${m.twr.toFixed(2)} · ${twrText}</b></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BUILD LIST
+// ══════════════════════════════════════════════════════════════
+function renderList(){
+  const rows=[];
+  if(build.nose) rows.push(['NOSE',build.nose]);
+  build.stack.forEach(id=>rows.push(['BODY',id]));
+  build.fins.forEach(id=>rows.push(['FIN',id]));
+  const el=document.getElementById('buildList');
+  el.innerHTML=rows.length?rows.map(([slot,id],i)=>{
+    const p=getPart(id);
+    return `<div class="build-chip"><span><b>${slot}</b> ${p?p.screenNameX:'?'}</span><button class="rm" onclick="removeAt('${slot}',${i})">✕</button></div>`;
+  }).join(''):'<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">No parts. Click parts to add.</p>';
+}
+
+function removeAt(slot,i){
+  if(slot==='NOSE') build.nose=null;
+  else if(slot==='FIN'){
+    const fi=i-(build.nose?1:0)-build.stack.length;
+    build.fins.splice(fi,1);
+  } else {
+    const si=i-(build.nose?1:0);
+    build.stack.splice(si,1);
+  }
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MILESTONE / PROGRESS UI
+// ══════════════════════════════════════════════════════════════
+function renderMilestones(){
+  const grid=document.getElementById('milestoneGrid');
+  grid.innerHTML=MILESTONES.map(m=>{
+    const reached=reachedMilestones.includes(m.alt)||best>=m.alt;
+    if(reached&&!reachedMilestones.includes(m.alt)) reachedMilestones.push(m.alt);
+    return `<div class="ms-chip${reached?' reached':''}">
+      <div class="ms-dot"></div>
+      <span>${m.icon} ${m.label}</span>
+    </div>`;
+  }).join('');
+  const count=MILESTONES.filter(m=>best>=m.alt).length;
+  document.getElementById('msCount').textContent=`${count} / ${MILESTONES.length}`;
+
+  // Progress fill: log scale to Moon
+  const pct=Math.min(100,(Math.log10(best+1)/Math.log10(PHYSICS.moonDistance+1))*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressPct').textContent=Math.round(pct)+'%';
+
+  document.getElementById('bestBadge').textContent='BEST: '+formatDistance(best);
+}
+
+function renderAll(){
+  renderRocket();
+  renderStats();
+  renderList();
+  renderMilestones();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LAUNCH SIMULATION
+// ══════════════════════════════════════════════════════════════
+const canvas=document.getElementById('sky');
+const ctx=canvas.getContext('2d');
+let launchState=null, animId=null, flightId=null;
+let needleX=50, needleDir=1, mixAnim=null;
+const COAST_SPEEDS=[1,2,4,8];
+let coastIdx=0;
+
+const BANDS=[
+  {name:'Launch Pad',  min:0,         top:'#82d9ff',bot:'#d7f4ff',stars:0, clouds:10},
+  {name:'Troposphere', min:1000,      top:'#4aa3e7',bot:'#9fdfff',stars:0, clouds:12},
+  {name:'Stratosphere',min:10000,     top:'#1f5aa6',bot:'#62b9f5',stars:15,clouds:5},
+  {name:'Space',       min:100000,    top:'#060d2a',bot:'#1a3f84',stars:55,clouds:0},
+  {name:'Low Orbit',   min:400000,    top:'#010308',bot:'#060e28',stars:120,clouds:0},
+  {name:'Deep Space',  min:10000000,  top:'#000004',bot:'#020816',stars:180,clouds:0},
+  {name:'Moon Approach',min:PHYSICS.moonDistance*.82,top:'#000000',bot:'#010408',stars:220,clouds:0},
+];
+function currentBand(){ let b=BANDS[0]; for(const x of BANDS){if((launchState?.altitude||0)>=x.min)b=x;} return b; }
+
+function formatDistance(m){
+  if(!isFinite(m)||m<0) return '0 m';
+  if(m<1000) return `${Math.round(m).toLocaleString()} m`;
+  if(m<100000) return `${(m/1000).toFixed(2)} km`;
+  return `${Math.round(m/1000).toLocaleString()} km`;
+}
+function formatSpeed(v){
+  if(!isFinite(v)||v<0) return '0 m/s';
+  if(v<1000) return `${Math.round(v)} m/s`;
+  return `${(v/1000).toFixed(2)} km/s`;
+}
+
+// ── Image cache kept for debris (fallback only) ──
+const imgCache=new Map();
+function getImg(src){ if(!imgCache.has(src)){const i=new Image();i.src=src;imgCache.set(src,i);} return imgCache.get(src); }
+function rr(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function drawPartCanvas(part, x, y, w, h, mirror=false, fuelRatio=1){
+  ctx.save(); ctx.translate(x,y); if(mirror) ctx.scale(-1,1);
+  ctx.strokeStyle='#14191d'; ctx.lineWidth=2;
+
+  if(part.pieceType==='NosePiece'){
+    const ng=ctx.createLinearGradient(-w*.5,0,w*.5,0);
+    ng.addColorStop(0,'#888d92');ng.addColorStop(.25,'#e4e8e8');ng.addColorStop(.6,'#c8cccc');ng.addColorStop(1,'#787e84');
+    ctx.fillStyle=ng;
+    ctx.beginPath();ctx.moveTo(0,-h);ctx.bezierCurveTo(w*.42,-h*.7,w*.44,-h*.2,w*.38,0);ctx.lineTo(-w*.38,0);ctx.bezierCurveTo(-w*.44,-h*.2,-w*.42,-h*.7,0,-h);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#cc1f28';ctx.beginPath();ctx.moveTo(0,-h);ctx.lineTo(w*.22,-h*.68);ctx.lineTo(-w*.22,-h*.68);ctx.closePath();ctx.fill();
+
+  } else if(part.pieceType==='FuelPiece'||part.pieceType==='SRBPiece'){
+    let liqColor='#3a9ad0',emptyColor='#1a2a3a';
+    if(part.name==='Fuel_2'){liqColor='#3ab870';emptyColor='#0e2218';}
+    if(part.name==='Fuel_3'){liqColor='#c050a0';emptyColor='#280e22';}
+    if(part.pieceType==='SRBPiece'){liqColor='#e08030';emptyColor='#301810';}
+    // Shell outline
+    rr(-w*.44,-h,w*.88,h,5);ctx.fillStyle=emptyColor;ctx.fill();
+    // Liquid fill — shrinks from top as fuel is consumed
+    const fillH=Math.max(0,(h-4)*Math.min(1,Math.max(0,fuelRatio)));
+    if(fillH>2){
+      ctx.save();ctx.beginPath();rr(-w*.44,-h,w*.88,h,5);ctx.clip();
+      ctx.fillStyle=liqColor;ctx.globalAlpha=0.75;
+      ctx.fillRect(-w*.44,-fillH,w*.88,fillH);
+      // sheen on left side
+      ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(-w*.44,-fillH,w*.2,fillH);
+      // slosh line at surface
+      ctx.globalAlpha=0.5;ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(-w*.44,-fillH,w*.88,2);
+      ctx.restore();
+    }
+    // Metallic shell overlay
+    const tg=ctx.createLinearGradient(-w*.5,0,w*.5,0);
+    tg.addColorStop(0,'rgba(120,130,136,.7)');tg.addColorStop(.22,'rgba(220,228,228,.4)');
+    tg.addColorStop(.62,'rgba(190,198,198,.3)');tg.addColorStop(1,'rgba(100,112,118,.7)');
+    ctx.fillStyle=tg;ctx.globalAlpha=1;rr(-w*.44,-h,w*.88,h,5);ctx.fill();
+    ctx.strokeStyle='#14191d';rr(-w*.44,-h,w*.88,h,5);ctx.stroke();
+    // Red band
+    ctx.fillStyle='#cc1f28';ctx.fillRect(-w*.4,-h*.22,w*.8,4);
+
+  } else if(part.pieceType==='EnginePiece'){
+    let bodyColor='#c8cece', accentColor='#cc1f28', nozzleColor='#4a5258';
+    if(part.screenNameX.includes('Liquid')){bodyColor='#b8d4f0';accentColor='#1a6abf';nozzleColor='#4a8ac0';}
+    else if(part.screenNameX.includes('Hybrid')){bodyColor='#c8e8b0';accentColor='#3a8828';nozzleColor='#5aa840';}
+    else if(part.screenNameX.includes('Magneto')){bodyColor='#d8c8f8';accentColor='#6a28cc';nozzleColor='#8a48dc';}
+    else if(part.zany){bodyColor='#f8e0b0';accentColor='#cc7a10';nozzleColor='#e8a030';}
+    const eg=ctx.createLinearGradient(-w*.5,0,w*.5,0);
+    eg.addColorStop(0,'#7a8288');eg.addColorStop(.2,bodyColor);eg.addColorStop(.55,'#c0c4c0');eg.addColorStop(.8,'#f4f6f4');eg.addColorStop(1,'#6a7278');
+    rr(-w*.46,-h*.82,w*.92,h*.46,7);ctx.fillStyle=eg;ctx.fill();ctx.stroke();
+    ctx.fillStyle=accentColor;ctx.fillRect(-w*.42,-h*.54,w*.84,4);
+    // Nozzle bell
+    const nz=ctx.createLinearGradient(-w*.4,0,w*.4,0);
+    nz.addColorStop(0,'#2a3038');nz.addColorStop(.45,nozzleColor);nz.addColorStop(1,'#202830');
+    ctx.fillStyle=nz;
+    ctx.beginPath();ctx.moveTo(-w*.3,-h*.3);ctx.lineTo(w*.3,-h*.3);ctx.lineTo(w*.44,0);ctx.lineTo(-w*.44,0);ctx.closePath();ctx.fill();ctx.stroke();
+    // Throat
+    ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(0,-h*.3,w*.3,3.5,0,0,Math.PI*2);ctx.stroke();
+
+  } else if(part.pieceType==='OrbiterPiece'){
+    const og=ctx.createLinearGradient(-w*.5,0,w*.5,0);
+    og.addColorStop(0,'#7a8290');og.addColorStop(.35,'#c8d0d8');og.addColorStop(.72,'#b0b8c0');og.addColorStop(1,'#6a7280');
+    ctx.fillStyle='#8a9098';
+    ctx.beginPath();ctx.moveTo(-w*.46,-h*.1);ctx.lineTo(-w*.22,-h*.7);ctx.lineTo(-w*.18,-h*.1);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(w*.46,-h*.1);ctx.lineTo(w*.22,-h*.7);ctx.lineTo(w*.18,-h*.1);ctx.closePath();ctx.fill();ctx.stroke();
+    rr(-w*.28,-h,w*.56,h,7);ctx.fillStyle=og;ctx.fill();ctx.stroke();
+    ctx.fillStyle='#88c8f0';
+    ctx.beginPath();ctx.arc(-w*.08,-h*.5,3.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(w*.08,-h*.5,3.5,0,Math.PI*2);ctx.fill();
+
+  } else if(part.pieceType==='FinPiece'){
+    ctx.fillStyle='#7a8288';
+    ctx.beginPath();ctx.moveTo(-w*.5,0);ctx.lineTo(w*.5,0);ctx.lineTo(w*.3,-h);ctx.lineTo(-w*.22,-h*.84);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#555c62';
+    [[-w*.26,-h*.22],[0,-h*.22],[w*.26,-h*.22],[-w*.13,-h*.5],[w*.13,-h*.5]].forEach(([rx,ry])=>{
+      ctx.beginPath();ctx.arc(rx,ry,2.5,0,Math.PI*2);ctx.fill();
+    });
+  } else {
+    rr(-w*.44,-h,w*.88,h,6);ctx.fillStyle='#3a4858';ctx.fill();ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Canvas scale: render rocket at 70px wide in launch view
+const CANVAS_ROCKET_W = 70;
+// Pre-load sprite images for canvas use
+const spriteCache = new Map();
+function getSprite(p) {
+  const src = 'assets/' + (PART_ART[p.name] || 'img_1678_lossless.png').replace('assets/','');
+  if (!spriteCache.has(src)) { const im=new Image(); im.src=src; spriteCache.set(src,im); }
+  return spriteCache.get(src);
+}
+
+function canvasPieceDims(p) {
+  // Use real sprite aspect ratios, scaled to CANVAS_ROCKET_W
+  const d = SPRITE_DIMS[p.name] || SPRITE_DIMS[p.pieceType] || {nw:76,nh:69};
+  const scale = CANVAS_ROCKET_W / d.nw;
+  return { w: CANVAS_ROCKET_W, h: Math.round(d.nh * scale) };
+}
+
+function drawSpriteOrVector(part, x, y, w, h, mirror, fuelRatio) {
+  const img = getSprite(part);
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (mirror) ctx.scale(-1, 1);
+    ctx.drawImage(img, -w/2, -h, w, h);
+    // Fuel level overlay: darken the upper empty portion of tanks
+    if ((part.pieceType==='FuelPiece'||part.pieceType==='SRBPiece') && fuelRatio < 1) {
+      const emptyH = h * (1 - Math.max(0, fuelRatio));
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(-w/2, -h, w, emptyH);
+    }
+    ctx.restore();
+  } else {
+    drawPartCanvas(part, x, y, w, h, mirror, fuelRatio);
+  }
+}
+
+// Draw a tapered cowling adapter on the canvas between engine and next segment
+function drawCowlingCanvas(x, y, botW, topW, h) {
+  const bW = botW * 0.62;
+  const tW = topW * 0.96;
+  const cg = ctx.createLinearGradient(x - tW/2, 0, x + tW/2, 0);
+  cg.addColorStop(0,   '#888d92');
+  cg.addColorStop(0.18,'#e8eae8');
+  cg.addColorStop(0.55,'#c4c8c4');
+  cg.addColorStop(0.80,'#f4f6f4');
+  cg.addColorStop(1,   '#787e84');
+  ctx.fillStyle = cg;
+  ctx.beginPath();
+  ctx.moveTo(x - tW/2, y - h);
+  ctx.lineTo(x + tW/2, y - h);
+  ctx.lineTo(x + bW/2, y);
+  ctx.lineTo(x - bW/2, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#1a1f24'; ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Red stripe
+  ctx.fillStyle = 'rgba(204,31,40,0.9)';
+  ctx.fillRect(x - tW/2 + 1, y - h + h*0.18, tW - 2, h*0.14);
+}
+
+function drawCanvasRocket(burning){
+  const parts = liveRocketParts();
+  let y = 0;
+  const COWL_H = 20; // slightly shorter in the canvas view
+
+  parts.forEach((part, i) => {
+    const {w, h} = canvasPieceDims(part);
+    const fuelRatio = fuelRatioForPart(part.name);
+    drawSpriteOrVector(part, 0, -y, w, h, false, fuelRatio);
+    y += h - 3;
+
+    // Insert cowling above every engine that has a next segment
+    const nextPart = parts[i + 1];
+    if (part.pieceType === 'EnginePiece' && nextPart) {
+      const {w: nw} = canvasPieceDims(nextPart);
+      drawCowlingCanvas(0, -y, w, nw, COWL_H);
+      y += COWL_H - 3;
+    }
+  });
+
+  // Fins: flanking the engine, top-aligned with engine top
+  if (parts.length > 0) {
+    const engPart = parts[0]; // engine is always first (bottom)
+    const {w: ew, h: eh} = canvasPieceDims(engPart);
+    build.fins.map(getPart).filter(Boolean).slice(0, 2).forEach((part, i) => {
+      const left = i === 0;
+      const fd = finDims(part);
+      // Scale fin to ~65% for canvas view
+      const fw = Math.round(fd.w * 0.65), fh = Math.round(fd.h * 0.65);
+      // Fin top aligns with engine top; fin bottom may extend below engine bottom
+      // In canvas: rocket is drawn with bottom of engine at y=0 going upward
+      // Engine occupies y: -eh to 0. Fin top at -eh, bottom at -eh + fh
+      const finTopY  = -eh;         // fin top = engine top
+      const finBotY  = finTopY + fh; // fin bottom
+      const finCentY = (finTopY + finBotY) / 2;
+      // Horizontal: fin right edge overlaps engine left edge by 10px (or vice versa)
+      const fx = left
+        ? -(ew/2 + fw/2 - 10)   // left fin: centered, right edge 10px into engine
+        :  (ew/2 + fw/2 - 10);  // right fin: mirror
+      drawSpriteOrVector(part, fx, finBotY, fw, fh, !left, 1);
+    });
+  }
+
+  // Engine flame below the rocket
+  if (burning) {
+    const flicker = Math.random() * 22;
+    const fg = ctx.createLinearGradient(0, 8, 0, 96 + flicker);
+    fg.addColorStop(0,  'rgba(255,252,180,.98)');
+    fg.addColorStop(.25,'rgba(255,180,30,.9)');
+    fg.addColorStop(.65,'rgba(255,80,0,.5)');
+    fg.addColorStop(1,  'rgba(255,40,0,0)');
+    ctx.fillStyle=fg;
+    ctx.beginPath();ctx.moveTo(-18,8);ctx.quadraticCurveTo(0,96+flicker,18,8);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,200,.75)';
+    ctx.beginPath();ctx.moveTo(-8,8);ctx.quadraticCurveTo(0,54+flicker*.4,8,8);ctx.closePath();ctx.fill();
+    for(let i=0;i<7;i++){
+      ctx.fillStyle=`rgba(255,${170+Math.random()*70|0},0,.62)`;
+      ctx.beginPath();ctx.arc((Math.random()-.5)*22,22+Math.random()*(56+flicker),1.5,0,Math.PI*2);ctx.fill();
+    }
+  }
+}
+
+function drawCloud(x,y,s,a){
+  ctx.fillStyle=`rgba(255,255,255,${a})`;
+  ctx.beginPath();ctx.ellipse(x,y,38*s,14*s,0,0,Math.PI*2);
+  ctx.ellipse(x+30*s,y+4*s,28*s,11*s,0,0,Math.PI*2);
+  ctx.ellipse(x-26*s,y+5*s,22*s,10*s,0,0,Math.PI*2);
+  ctx.fill();
+}
+
+function drawLaunchTower(groundY){
+  ctx.save();
+  ctx.globalAlpha=Math.max(0,Math.min(1,(groundY+40)/440));
+  ctx.strokeStyle='rgba(55,73,85,.9)';ctx.lineWidth=7;
+  for(const x of [290,348,672,730]){ctx.beginPath();ctx.moveTo(x,groundY-380);ctx.lineTo(x,groundY+8);ctx.stroke();}
+  ctx.lineWidth=4;
+  for(let y=groundY-360;y<groundY;y+=70){
+    ctx.fillStyle='#f5cf37';ctx.fillRect(280,y,76,34);ctx.fillRect(673,y+18,76,34);
+    ctx.strokeStyle='rgba(90,83,28,.45)';ctx.strokeRect(280,y,76,34);ctx.strokeRect(673,y+18,76,34);
+  }
+  ctx.strokeStyle='rgba(27,45,57,.8)';ctx.lineWidth=4;
+  for(let y=groundY-380;y<groundY;y+=80){
+    ctx.beginPath();ctx.moveTo(290,y);ctx.lineTo(348,y+70);ctx.moveTo(348,y);ctx.lineTo(290,y+70);
+    ctx.moveTo(672,y);ctx.lineTo(730,y+70);ctx.moveTo(730,y);ctx.lineTo(672,y+70);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function scaleAltY(m){
+  const max=PHYSICS.moonDistance, off=100;
+  const t=Math.log10(Math.max(0,Math.min(max,m))+off)-Math.log10(off);
+  return 380-(t/(Math.log10(max+off)-Math.log10(off)))*380;
+}
+
+function drawAltScale(){
+  ctx.save();ctx.translate(28,30);
+  ctx.strokeStyle='rgba(255,255,255,.6)';ctx.fillStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;
+  ctx.font='bold 11px "Share Tech Mono",monospace';ctx.textAlign='left';
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,380);ctx.stroke();
+  ctx.fillStyle='rgba(245,196,0,.95)';ctx.fillText('ALTITUDE',0,-12);
+  const marks=[[0,'0 m'],[1000,'1 km'],[10000,'10 km'],[100000,'SPACE'],[400000,'ORBIT'],[10000000,'10K km'],[100000000,'100K km'],[PHYSICS.moonDistance,'MOON']];
+  let lastY=999;
+  marks.forEach(([m,lbl])=>{
+    const yy=scaleAltY(m);
+    const major=(m===0||m===100000||m===400000||m===PHYSICS.moonDistance);
+    ctx.strokeStyle=major?'rgba(255,255,255,.9)':'rgba(255,255,255,.4)';
+    ctx.lineWidth=major?2:1;
+    ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(major?18:10,yy);ctx.stroke();
+    if(Math.abs(yy-lastY)>16||major){
+      ctx.fillStyle=major?'rgba(245,196,0,.95)':'rgba(255,255,255,.75)';
+      ctx.fillText(lbl,22,yy+4);lastY=yy;
+    }
+  });
+  if(launchState){
+    const yy=scaleAltY(launchState.altitude);
+    ctx.fillStyle='#ff3b30';
+    ctx.beginPath();ctx.moveTo(-8,yy);ctx.lineTo(-20,yy-7);ctx.lineTo(-20,yy+7);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 10px "Share Tech Mono",monospace';
+    ctx.fillText(formatDistance(launchState.altitude),0,Math.max(8,yy-8));
+  }
+  ctx.restore();
+}
+
+function drawDebris(){
+  if(!launchState?.debris?.length)return;
+  launchState.debris.forEach(d=>{
+    ctx.save();ctx.translate(510+d.x,270+d.y+d.age*38);ctx.rotate(d.rot);
+    drawPartCanvas(d.part,0,0,36,36);ctx.restore();
+  });
+}
+
+function drawScene(rocketY,tilt,burning,finished=false){
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const alt=launchState?.altitude||0;
+  const band=currentBand();
+  const t=performance.now()/1000;
+  const scroll=alt*.065+(burning?t*28:t*8);
+
+  // Sky gradient
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,band.top);grad.addColorStop(1,band.bot);
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+
+  // Stars
+  if(band.stars){
+    ctx.fillStyle='rgba(255,255,255,.92)';
+    for(let i=0;i<band.stars;i++){
+      const sx=(i*97+41)%W;
+      const sy=((i*61+scroll*.28)%H)-30;
+      const sr=i%11===0?2:1;
+      const alpha=.5+.5*Math.sin(t*1.4+i);
+      ctx.globalAlpha=alpha*.95;
+      ctx.fillRect(sx,sy,sr,sr);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // Clouds
+  for(let i=0;i<(band.clouds||0);i++){
+    const layer=.4+(i%5)*.15;
+    const cx=(i*163+(t*16*layer)%1200)-80;
+    const cy=((i*79+scroll*layer)%520)-70;
+    drawCloud(cx,cy,(i%3+1)*.36,.18+(i%4)*.06);
+  }
+
+  // Ground + mountains
+  const groundY=400+Math.min(400,alt*.16);
+  if(groundY<H){
+    // Mountains
+    ctx.fillStyle='#567b9e';
+    ctx.beginPath();ctx.moveTo(0,groundY+22);
+    ctx.lineTo(140,groundY-10);ctx.lineTo(260,groundY+14);ctx.lineTo(430,groundY-24);
+    ctx.lineTo(610,groundY+12);ctx.lineTo(790,groundY-16);ctx.lineTo(1020,groundY+24);
+    ctx.lineTo(1020,groundY+80);ctx.lineTo(0,groundY+80);ctx.fill();
+    // Grass
+    ctx.fillStyle='#7db36b';ctx.fillRect(0,groundY,W,80);
+    // Pad base
+    ctx.fillStyle='#516278';ctx.fillRect(400,groundY+3,220,22);
+    ctx.fillStyle='rgba(50,50,50,.5)';ctx.fillRect(430,groundY+25,160,10);
+
+    drawLaunchTower(groundY);
+  }
+
+  // Exhaust smoke column
+  if(burning||alt>80){
+    ctx.save();ctx.globalAlpha=.3;
+    for(let i=0;i<18;i++){
+      const py=groundY-18-i*24+scroll*.06;
+      const rad=16+i*3.5;
+      ctx.fillStyle='rgba(230,230,210,.45)';
+      ctx.beginPath();ctx.ellipse(510+(Math.sin(i*1.6+t)*18),py,rad,rad*.5,0,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Shake
+  const shake=launchState?.shake||0;
+  const sx=(Math.random()-.5)*shake, sy=(Math.random()-.5)*shake;
+
+  drawDebris();
+
+  // Rocket
+  ctx.save();ctx.translate(sx,sy);ctx.translate(510,rocketY);ctx.rotate(tilt);
+  drawCanvasRocket(burning);ctx.restore();
+
+  // Stage separation flash
+  if(launchState?.sepFlash>0){
+    ctx.fillStyle=`rgba(255,200,50,${launchState.sepFlash*.35})`;
+    ctx.fillRect(0,0,W,H);
+    launchState.sepFlash-=.08;
+  }
+
+  drawAltScale();
+
+  // Event text
+  if(launchState?.events?.length){
+    const ev=launchState.events[0];
+    const ec=ev.type==='bad'?'#ff8fab':(ev.type==='good'?'#9bf6c3':'#ffd166');
+    ctx.font='bold 15px "Barlow Condensed",sans-serif';
+    ctx.textAlign='center';ctx.fillStyle=ec;
+    ctx.fillText(ev.text,510,28);
+  }
+
+  // Dim when finished
+  if(finished){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(0,0,W,H);}
+}
+
+// ── Needle mix animation ──
+function tickNeedle(){
+  needleX+=needleDir*2.1;
+  if(needleX>100||needleX<0) needleDir*=-1;
+  document.getElementById('needle').style.left=needleX+'%';
+  mixAnim=requestAnimationFrame(tickNeedle);
+}
+function ignitionQuality(){ return Math.max(.35,1-Math.abs(needleX-50)/50); }
+
+// ── HUD update ──
+function addEvent(text,type='cue'){
+  if(!launchState)return;
+  launchState.events.unshift({text,type,t:performance.now()});
+  launchState.events=launchState.events.slice(0,4);
+}
+
+function setResult(html){ document.getElementById('resultBar').innerHTML=html; }
+
+function updateHUD(){
+  if(!launchState){
+    document.getElementById('hudStage').textContent='—';
+    document.getElementById('hudAlt').textContent='0 m';
+    document.getElementById('hudSpeed').textContent='0 m/s';
+    document.getElementById('hudZone').textContent='Launch Pad';
+    document.getElementById('hudTW').textContent='—';
+    document.getElementById('hudScore').textContent='0';
+    document.getElementById('burnFill').style.width='0%';
+    return;
+  }
+  const st=launchState.stages[launchState.current];
+  const band=currentBand();
+  document.getElementById('hudAlt').textContent=formatDistance(launchState.altitude);
+  document.getElementById('hudSpeed').textContent=formatSpeed(Math.max(0,launchState.velocity));
+  document.getElementById('hudZone').textContent=band.name;
+  document.getElementById('hudScore').textContent=launchState.score||0;
+
+  const stLabel=st?`Stage ${launchState.current+1}/${launchState.stages.length}: ${st.part.screenNameX}`:`${launchState.stages.length} stages ready`;
+  document.getElementById('hudStage').textContent=stLabel;
+
+  if(st&&st.ignited&&!st.spent){
+    const twEl=document.getElementById('hudTW');
+    twEl.textContent=`${launchState.liveTwr.toFixed(2)} · ${launchState.accel.toFixed(1)}m/s²`;
+    twEl.className='hud-val'+(launchState.liveTwr>1?' good':' bad');
+  } else {
+    document.getElementById('hudTW').textContent='—';
+    document.getElementById('hudTW').className='hud-val';
+  }
+
+  document.getElementById('burnFill').style.width=st?`${Math.max(0,Math.min(100,st.remaining/st.burn*100))}%`:'0%';
+
+  // Coast controls
+  const allSpent=launchState.stages.every(s=>s.spent);
+  const canCoast=!launchState.done&&allSpent&&launchState.velocity>0;
+  document.getElementById('coastBtn').disabled=!canCoast||!!launchState.apogeeAssist;
+  document.getElementById('speedBtn').disabled=!canCoast&&!launchState.apogeeAssist;
+  if(launchState.apogeeAssist) document.getElementById('coastBtn').textContent='Coasting…';
+  else document.getElementById('coastBtn').textContent='COAST TO APOGEE';
+}
+
+// ── Flight physics ──
+function effectiveTimeScale(burning){
+  if(!launchState)return 1;
+  if(burning||!launchState.stages.every(s=>s.spent))return 1;
+  return launchState.apogeeAssist?PHYSICS.apogeeAssistSpeed:(launchState.coastSpeed||1);
+}
+
+function checkMilestones(){
+  const marks=[1000,10000,100000,400000,10000000,PHYSICS.moonDistance];
+  for(const mark of marks){
+    if(launchState.altitude>=mark&&!launchState.milestones.has(mark)){
+      launchState.milestones.add(mark);
+      const bname=currentBand().name;
+      addEvent(`🎉 ${bname} reached!`,'good');
+      setResult(`<div class="result-icon">🎉</div><div><div class="big">${bname} reached!</div><div class="note">Keep flying — time every stage.</div></div>`);
+    }
+  }
+}
+
+function detachSpentStage(si){
+  if(!launchState)return;
+  const stage=launchState.stages[si]; if(!stage)return;
+  stage.parts.forEach((part,i)=>{
+    launchState.debris.push({
+      part,age:0,
+      x:(Math.random()-.5)*80,y:i*16,
+      vx:(Math.random()-.5)*80,vy:20+Math.random()*35,
+      spin:(Math.random()-.5)*3.2,rot:(Math.random()-.5)*.4
+    });
+  });
+  launchState.sepFlash=1;
+}
+
+function flightStep(now){
+  if(!launchState||launchState.done)return;
+  const realDt=Math.min(.06,(now-launchState.last)/1000);
+  launchState.last=now;
+  const m=metrics();
+  const st=launchState.stages[launchState.current];
+  const wasBurning=!!(st&&st.ignited&&!st.spent);
+  const dt=Math.min(.42,realDt*effectiveTimeScale(wasBurning));
+  let thrustNow=0, burning=false;
+
+  if(st&&st.ignited&&!st.spent){
+    burning=true; st.remaining-=dt;
+    thrustNow=st.thrust*st.quality*PHYSICS.thrustScale;
+    if(st.remaining<=0){
+      st.remaining=0;st.spent=true;burning=false;
+      launchState.stageWindow=true;launchState.coastTime=0;launchState.shake=8;
+      addEvent(`Stage ${launchState.current+1} burnout.`);
+      if(launchState.current<launchState.stages.length-1){
+        document.getElementById('nextBtn').disabled=false;
+        setResult('<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage burned out — IGNITE NEXT STAGE now!</div></div>');
+      } else {
+        if(!st.separated){st.separated=true;detachSpentStage(launchState.current);}
+        setResult('<div class="result-icon">🌠</div><div><div class="result-cue stage-cue">Final burnout. Use COAST TO APOGEE to skip the wait.</div></div>');
+      }
+    }
+  }
+
+  if(!burning&&launchState.stageWindow&&launchState.current<launchState.stages.length-1)
+    launchState.coastTime+=dt;
+
+  const mass=stackMassForFlight().total;
+  const g=gravityAtAltitude(launchState.altitude);
+  launchState.gravity=g;
+  const rho=Math.exp(-Math.max(0,launchState.altitude)/8500);
+  const cd=Math.max(.18,1.18-m.aero/100);
+  const drag=Math.sign(launchState.velocity)*.000022*cd*rho*launchState.velocity*launchState.velocity;
+  const stabilityLoss=(100-m.stability)/100*.7;
+  const accel=(thrustNow/Math.max(1,mass))-g-drag-stabilityLoss;
+  launchState.liveTwr=burning?thrustNow/Math.max(1,mass*g):0;
+  launchState.accel=accel;
+  launchState.velocity=Math.max(-900,launchState.velocity+accel*dt);
+
+  if(burning&&launchState.altitude<=0&&launchState.velocity<0){
+    launchState.velocity=0;
+    if(launchState.liveTwr<1&&!launchState.tooHeavyWarned){
+      launchState.tooHeavyWarned=true;
+      addEvent(`T/W ${launchState.liveTwr.toFixed(2)}: too heavy`,'bad');
+      setResult('<div class="result-icon">⚠️</div><div><div class="result-cue cue-bad">Too heavy to lift. Add more thrust or reduce mass.</div></div>');
+    }
+  }
+  launchState.altitude=Math.max(0,launchState.altitude+launchState.velocity*dt);
+  launchState.maxAltitude=Math.max(launchState.maxAltitude,launchState.altitude);
+  launchState.score=Math.round(launchState.maxAltitude/1000+m.stability*.3+launchState.milestones.size*25);
+
+  if(launchState.shake>0) launchState.shake=Math.max(0,launchState.shake-dt*22);
+  launchState.debris.forEach(d=>{d.age+=dt;d.x+=d.vx*dt;d.y+=d.vy*dt+22*d.age*dt;d.vy+=g*dt*.5;d.rot+=d.spin*dt;});
+  launchState.debris=launchState.debris.filter(d=>d.age<8);
+  checkMilestones();
+
+  const screenLift=Math.min(210,Math.max(Math.sqrt(Math.max(0,launchState.altitude))*14,Math.min(130,launchState.altitude*3.5)));
+  const flightSec=(performance.now()-(launchState.startTime||performance.now()))/1000;
+  const lowStab=Math.max(0,(35-m.stability)/35);
+  const vibe=(burning&&flightSec<1.4)?Math.sin(now/55)*.018:0;
+  const wobble=(burning&&lowStab>0)?Math.sin(now/120)*lowStab*.16:0;
+  const rocketY=launchState.altitude<260?400-screenLift:250;
+
+  drawScene(rocketY,vibe+wobble,burning);
+  updateHUD();
+
+  const allSpent=launchState.stages.every(s=>s.spent);
+  if((allSpent&&launchState.velocity<=0)||(launchState.altitude<=0&&launchState.current>=0&&allSpent)){
+    finishFlight();return;
+  }
+  flightId=requestAnimationFrame(flightStep);
+}
+
+function igniteStage(i,quality){
+  const st=launchState.stages[i]; if(!st)return;
+  st.ignited=true;st.quality=quality;launchState.current=i;
+  launchState.coastTime=0;launchState.stageWindow=false;
+  document.getElementById('nextBtn').disabled=true;
+  const nextLabel=i<launchState.stages.length-1?`IGNITE STAGE ${i+2}`:'FINAL STAGE';
+  document.getElementById('nextBtn').textContent=nextLabel;
+}
+
+function openLaunch(){
+  const stages=buildStages();
+  if(!stages.length){alert('Add at least one engine stage first.');return;}
+  document.getElementById('launchOverlay').classList.add('open');
+
+  launchState={
+    stages,current:-1,altitude:0,velocity:0,coastTime:0,
+    totalQuality:0,done:false,last:performance.now(),
+    stageWindow:false,events:[],milestones:new Set(),
+    shake:0,maxAltitude:0,score:0,trail:[],debris:[],
+    gravity:9.81,liveTwr:0,accel:0,startTime:0,
+    coastSpeed:1,apogeeAssist:false,sepFlash:0,
+    tooHeavyWarned:false,
+  };
+  coastIdx=0;
+  document.getElementById('commitBtn').disabled=false;
+  document.getElementById('commitBtn').textContent='IGNITE STAGE 1';
+  document.getElementById('nextBtn').disabled=true;
+  document.getElementById('nextBtn').textContent=stages.length>1?'IGNITE STAGE 2':'FINAL STAGE';
+  document.getElementById('speedBtn').textContent='COAST 1×';
+  setResult('<div class="result-icon">🚀</div><div><div class="result-cue">Hit <b>IGNITE STAGE 1</b> when the needle is in the <b style="color:var(--green)">green zone</b>. Stage right after burnout.</div></div>');
+  updateHUD();
+  drawScene(400,0,false);
+  tickNeedle();
+}
+
+function igniteFirst(){
+  if(!launchState)return;
+  cancelAnimationFrame(mixAnim);
+  const q=ignitionQuality();
+  launchState.totalQuality+=q;
+  document.getElementById('commitBtn').disabled=true;
+  const qMsg=q>.82?'Perfect mixture! 🎯':'Mixture off — but it will fly.';
+  addEvent(qMsg,q>.82?'good':'cue');
+  setResult(`<div class="result-icon">${q>.82?'🎯':'🔥'}</div><div><div class="result-cue stage-cue">${qMsg} Watch altitude and time the next stage.</div></div>`);
+  launchState.shake=22;
+  igniteStage(0,q);
+  launchState.startTime=performance.now();
+  launchState.last=performance.now();
+  flightId=requestAnimationFrame(flightStep);
+}
+
+function igniteNext(){
+  if(!launchState||launchState.done)return;
+  const next=launchState.current+1;
+  if(next>=launchState.stages.length)return;
+  let timing=1;
+  const cur=launchState.stages[launchState.current];
+  if(cur&&!cur.spent){
+    timing=.45;addEvent('Early stage: fuel wasted','bad');
+    setResult('<div class="result-icon">⚠️</div><div><div class="result-cue cue-bad">Early staging — fuel wasted. Next time wait for burnout.</div></div>');
+  } else if(launchState.coastTime>.9){
+    timing=Math.max(.35,1-launchState.coastTime*.22);addEvent('Late stage: speed lost','bad');
+    setResult('<div class="result-icon">⏱️</div><div><div class="result-cue cue-bad">Late ignition — lost speed. Stage right after burnout.</div></div>');
+  } else {
+    addEvent('Clean staging! ✓','good');
+    setResult('<div class="result-icon">✅</div><div><div class="result-cue stage-cue">Clean staging! That\'s the skill move.</div></div>');
+  }
+  if(cur&&!cur.separated){cur.separated=true;detachSpentStage(launchState.current);}
+  launchState.shake=12;
+  igniteStage(next,timing);
+}
+
+function coastToApogee(){
+  if(!launchState||launchState.done)return;
+  if(!launchState.stages.every(s=>s.spent)){
+    setResult('<div class="result-icon">⏳</div><div><div class="result-cue">Finish all stage burns first, then coast.</div></div>');return;
+  }
+  if(launchState.velocity<=0){finishFlight();return;}
+  launchState.apogeeAssist=true;
+  launchState.coastSpeed=PHYSICS.apogeeAssistSpeed;
+  addEvent('Fast coast engaged','good');
+  document.getElementById('coastBtn').textContent='Coasting…';
+  document.getElementById('coastBtn').disabled=true;
+}
+
+function cycleCoastSpeed(){
+  if(!launchState||launchState.done)return;
+  coastIdx=(coastIdx+1)%COAST_SPEEDS.length;
+  launchState.coastSpeed=COAST_SPEEDS[coastIdx];
+  document.getElementById('speedBtn').textContent=`COAST ${launchState.coastSpeed}×`;
+}
+
+function finishFlight(){
+  launchState.done=true;
+  cancelAnimationFrame(flightId);
+  document.getElementById('nextBtn').disabled=true;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('coastBtn').disabled=true;
+  document.getElementById('speedBtn').disabled=true;
+
+  const m=metrics();
+  const altitude=launchState.maxAltitude;
+  const prevBest=best;
+
+  // Check new unlocks
+  if(altitude>best){
+    best=altitude;
+    localStorage.setItem('slBest',best);
+    const newly=checkNewUnlocks(prevBest,best);
+    // Save milestones
+    MILESTONES.forEach(ms=>{if(best>=ms.alt&&!reachedMilestones.includes(ms.alt))reachedMilestones.push(ms.alt);});
+    localStorage.setItem('slMilestones',JSON.stringify(reachedMilestones));
+    renderMilestones();
+  }
+
+  const reached=currentBand().name;
+  let title='Flight Complete',icon='🚀',msg='Build with enough thrust, add fins to the lower engine, and time every stage.';
+  if(altitude<5&&m.twr<1){title='Too Heavy';icon='⚠️';msg='T/W below 1.0. Add a stronger engine or reduce mass.';}
+  else if(m.stability<35){title='Unstable Flight';icon='💥';msg='Add at least two fins to the lower engine.';}
+  else if(m.aero<45){title='High Drag';icon='🌬️';msg='Add a nose cone to cut drag.';}
+  else if(launchState.stages.length>1&&launchState.coastTime>.9){title='Late Staging';icon='⏱️';msg='You waited too long between stages. Stage immediately at burnout.';}
+  else if(altitude>=PHYSICS.moonDistance){title='MOON REACHED!';icon='🌑';msg='Mission complete. Incredible build.';}
+  else if(altitude>=PHYSICS.orbitAltitude){title='ORBIT REACHED!';icon='🛰️';msg='Mission success. Strong staging and stability.';}
+  else if(altitude>100000){title='Space Reached';icon='🌌';msg='Strong flight. Add power or improve staging to reach orbit.';}
+  else if(altitude>45000){title='Near Space';icon='🌐';msg='Great flight. Add more thrust for space.';}
+
+  const isNewBest=altitude>prevBest;
+  const newBestTag=isNewBest?` <span style="color:var(--green)">★ NEW BEST!</span>`:'';
+
+  drawScene(250,0,false,true);
+  setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}</div></div>`);
+  updateHUD();
+  renderStats();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ══════════════════════════════════════════════════════════════
+document.getElementById('launchBtn').onclick=openLaunch;
+document.getElementById('launchBtn2').onclick=openLaunch;
+document.getElementById('clearBtn').onclick=clearBuild;
+document.getElementById('sampleBtn').onclick=buildSample;
+document.getElementById('saveBtn').onclick=()=>{localStorage.setItem('slBuild',JSON.stringify(build));alert('Rocket saved!');};
+document.getElementById('loadBtn').onclick=()=>{try{const b=JSON.parse(localStorage.getItem('slBuild'));if(b){build=b;renderAll();}}catch(e){alert('No saved rocket found.');}};
+document.getElementById('commitBtn').onclick=igniteFirst;
+document.getElementById('nextBtn').onclick=igniteNext;
+document.getElementById('coastBtn').onclick=coastToApogee;
+document.getElementById('speedBtn').onclick=cycleCoastSpeed;
+document.getElementById('closeBtn').onclick=()=>{
+  document.getElementById('launchOverlay').classList.remove('open');
+  cancelAnimationFrame(mixAnim);cancelAnimationFrame(flightId);
+};
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+initTabs();
+renderParts();
+renderMilestones();
+buildSample();
+
+</script>
+</body>
+</html>
