@@ -624,6 +624,39 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 .udl-kid.licensed .school-title{font-size:30px}
 @media(max-width:900px){.udl-strip{flex-direction:column}.udl-steps{grid-template-columns:1fr}.udl-kid .app,.udl-kid.udl-tools-hidden .app{grid-template-columns:1fr}.udl-kid .stage{min-height:460px}.udl-kid .hud-strip{grid-template-columns:repeat(2,1fr)}.udl-kid .launch-controls{grid-template-columns:1fr 1fr}.udl-reflect-row{grid-template-columns:1fr}}
 
+
+/* ─── MOBILE STUDENT INTERFACE ─── */
+.mobile-ui{font-size:17px;touch-action:manipulation}
+.mobile-ui header{
+  position:sticky;top:0;z-index:80;
+  padding:10px 12px;gap:8px;align-items:center;
+}
+.mobile-ui .logo svg{width:28px;height:28px}
+.mobile-ui .logo h1{font-size:20px;letter-spacing:.02em}
+.mobile-ui .logo .sub{font-size:11px}.mobile-ui .logo .sub + .sub{display:none}
+.mobile-ui .header-right{gap:6px}.mobile-ui .best-badge{display:none}
+.mobile-ui #launchBtn{display:none}
+.mobile-ui .udl-strip{margin:8px 0 0;padding:0 8px;gap:8px;display:grid;grid-template-columns:1fr}
+.mobile-ui .udl-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mobile-ui .udl-step-card{border-radius:12px;padding:8px 7px;font-size:13px;gap:6px;justify-content:center;text-align:center;min-height:48px}
+.mobile-ui .udl-step-card b{width:26px;height:26px;font-size:14px}.mobile-ui .udl-step-card span{line-height:1.05}
+.mobile-ui .udl-tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mobile-ui .udl-tool-btn{min-height:44px;font-size:13px;padding:8px;border-radius:11px}.mobile-ui .udl-tool-btn.teacher{grid-column:1/-1}
+.mobile-ui .app,.mobile-ui.udl-tools-hidden .app{display:flex;flex-direction:column;gap:10px;padding:8px;max-width:620px;margin:0 auto}
+.mobile-ui.udl-tools-hidden .mode-panel,.mobile-ui.udl-tools-hidden .landing-challenge-panel,.mobile-ui.udl-tools-hidden .col:last-child,.mobile-ui.udl-tools-hidden .col:first-child > .panel:not(.rocket-school-panel):not(.mode-panel):not(.landing-challenge-panel){display:none!important}
+.mobile-ui .col{gap:10px}.mobile-ui .panel{border-radius:16px}.mobile-ui .panel-header{font-size:13px;padding:10px 12px}.mobile-ui .panel-body{padding:10px}
+.mobile-ui .school-card{gap:10px;padding:12px}.mobile-ui .school-top{align-items:center}.mobile-ui .school-level{font-size:11px}.mobile-ui .school-title{font-size:26px}.mobile-ui .school-goal{font-size:14px;padding:9px}.mobile-ui .school-instruction{font-size:18px;padding:12px;border-radius:12px}
+.mobile-ui .udl-rocket-ready{min-height:50px;font-size:16px;padding:9px}.mobile-ui .school-actions .school-big-btn.secondary,.mobile-ui .school-big-btn{min-height:60px;font-size:20px;border-radius:15px;padding:14px}
+.mobile-ui .udl-simple-trail{gap:5px}.mobile-ui .udl-simple-dot{min-height:30px;font-size:12px}
+.mobile-ui .builder-wrap .panel-header{display:none}.mobile-ui.udl-tools-hidden .stage-toolbar{display:none}.mobile-ui .stage-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px}.mobile-ui .stage-toolbar button{min-height:46px;font-size:13px}
+.mobile-ui .stage{min-height:390px;border-radius:0 0 16px 16px}.mobile-ui .dropzone{height:330px;width:205px;bottom:82px}.mobile-ui .rocket-mount{bottom:86px}.mobile-ui .pad{bottom:34px;width:300px;height:56px}.mobile-ui .hint-tag{display:none}
+.mobile-ui .udl-license-grid{grid-template-columns:1fr;gap:9px}.mobile-ui .udl-license-title{font-size:25px}.mobile-ui .udl-license-text{font-size:17px}.mobile-ui .udl-license-grid button,.mobile-ui .udl-license-wide{min-height:58px;font-size:17px}
+.mobile-ui .launch-overlay{padding:0;align-items:stretch;justify-content:stretch;background:#03101c}.mobile-ui .launch-modal{width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:0;display:flex}.mobile-ui #sky{height:auto;flex:1;min-height:0}.mobile-ui .launch-controls{grid-template-columns:1fr 1fr;gap:8px;padding:10px;background:#092238}.mobile-ui #commitBtn,.mobile-ui #closeBtn{min-height:58px;font-size:18px;border-radius:14px}.mobile-ui .result-bar{padding:13px 14px;min-height:96px;align-items:flex-start}.mobile-ui .result-bar .big{font-size:27px}.mobile-ui .result-bar .note{font-size:18px}.mobile-ui .result-icon{font-size:32px}.mobile-ui .udl-reflect{margin-top:8px;padding:8px}.mobile-ui .udl-reflect-row{grid-template-columns:1fr;gap:6px}.mobile-ui .udl-reflect button{min-height:44px;font-size:15px}.mobile-ui .udl-next-actions button{min-height:54px;font-size:17px}
+.mobile-ui .landing-controls.open{grid-template-columns:1fr;gap:8px;padding:10px}.mobile-ui .landing-title{font-size:16px}.mobile-ui .landing-controls button{min-height:52px;font-size:15px}
+.mobile-ui.teacher-open .app{max-width:720px}.mobile-ui.teacher-open .mode-buttons,.mobile-ui.teacher-open .tabs{gap:8px}.mobile-ui.teacher-open .parts-scroll{max-height:280px}
+@media(max-width:420px){
+  .mobile-ui .logo h1{font-size:18px}.mobile-ui .udl-step-card{font-size:12px;padding:7px 4px}.mobile-ui .school-title{font-size:23px}.mobile-ui .school-instruction{font-size:17px}.mobile-ui .stage{min-height:350px}.mobile-ui .dropzone{height:300px;width:190px}.mobile-ui .result-bar .big{font-size:24px}
+}
+
 </style>
 </head>
 <body class="udl-kid udl-tools-hidden">
@@ -4026,9 +4059,25 @@ function licenseBuilder(action){
   renderAll();
 }
 
+
+// ── Mobile Student Interface Detection ───────────────────────
+function updateMobileInterface(){
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const narrow = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+  const short = window.matchMedia && window.matchMedia('(max-height: 620px)').matches;
+  const mobile = !!(narrow || (coarse && window.innerWidth <= 900) || (coarse && short));
+  document.body.classList.toggle('mobile-ui', mobile);
+  document.body.classList.toggle('teacher-open', mobile && !document.body.classList.contains('udl-tools-hidden'));
+  const root = document.documentElement;
+  root.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+window.addEventListener('resize', updateMobileInterface, {passive:true});
+window.addEventListener('orientationchange', ()=>setTimeout(updateMobileInterface, 150), {passive:true});
+
 // ── UDL 3.0 Grades 2–4 Support Tools ───────────────────────
 function udlToggleTools(){
   document.body.classList.toggle('udl-tools-hidden');
+  updateMobileInterface();
   renderAll();
 }
 function udlToggleBigText(){
@@ -4037,7 +4086,7 @@ function udlToggleBigText(){
 function udlCurrentDirectionsText(){
   if(gameMode==='easy' && rocketLicenseEarned) return 'You earned your Rocket License. Build a simple rocket, launch it, and change one thing to test again.';
   const lesson=currentSchoolLesson ? currentSchoolLesson() : null;
-  if(!lesson) return 'Pick a lesson. Load the rocket. Launch and notice what changed.';
+  if(!lesson) return 'Pick a lesson. The rocket is ready. Launch and notice what changed.';
   return `${lesson.level}. ${lesson.title}. ${lesson.goal.replace('Goal: ','')} ${lesson.instruction}`;
 }
 function udlReadDirections(){
@@ -4127,6 +4176,7 @@ document.getElementById('closeBtn').onclick=closeLaunchOverlay;
 // ══════════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════════
+updateMobileInterface();
 initModeUI();
 initTabs();
 renderParts();
@@ -4135,6 +4185,7 @@ renderRocketSchool();
 udlApplyStudentLabels();
 buildSample();
 udlApplyStudentLabels();
+updateMobileInterface();
 
 </script>
 </body>
