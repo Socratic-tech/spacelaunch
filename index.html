@@ -342,7 +342,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 .needle{position:absolute;top:0;bottom:0;width:3px;background:var(--accent);border-radius:2px;left:50%;transition:none;box-shadow:0 0 6px var(--accent)}
 
 .hud-strip{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
   background:rgba(4,10,20,.95);border-top:1px solid var(--border);
 }
 .hud-cell{
@@ -476,8 +476,10 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
       <div class="hud-cell"><span class="hud-key">STAGE</span><span class="hud-val" id="hudStage">—</span></div>
       <div class="hud-cell"><span class="hud-key">ALTITUDE</span><span class="hud-val" id="hudAlt">0 m</span></div>
       <div class="hud-cell"><span class="hud-key">VELOCITY</span><span class="hud-val" id="hudSpeed">0 m/s</span></div>
+      <div class="hud-cell"><span class="hud-key">LIVE MASS</span><span class="hud-val" id="hudMass">—</span></div>
       <div class="hud-cell"><span class="hud-key">ZONE</span><span class="hud-val" id="hudZone">Launch Pad</span></div>
       <div class="hud-cell"><span class="hud-key">T/W LIVE</span><span class="hud-val" id="hudTW">—</span></div>
+      <div class="hud-cell"><span class="hud-key">FUEL LEFT</span><span class="hud-val" id="hudFuel">—</span></div>
       <div class="hud-cell"><span class="hud-key">SCORE</span><span class="hud-val" id="hudScore">0</span></div>
     </div>
     <div class="burn-track"><div class="burn-fill" id="burnFill"></div></div>
@@ -995,15 +997,34 @@ function fuelRatioForPart(partId){
 function stackMassForFlight(){
   const ids=[...build.stack,...build.fins]; if(build.nose)ids.push(build.nose);
   let base=0; ids.map(getPart).filter(Boolean).forEach(p=>{base+=(p.weight||0)+(p.weightFuel||0);});
-  if(!launchState) return {total:base};
+  if(!launchState) return {total:base,base,burnedFuel:0,droppedMass:0,massLost:0};
   let burnedFuel=0, droppedMass=0;
   launchState.stages.forEach(s=>{
     const totalFuel=stageFuelMass(s);
-    const burnFrac=(s.burn-s.remaining)/Math.max(.001,s.burn);
+    const burnFrac=Math.max(0,Math.min(1,(s.burn-s.remaining)/Math.max(.001,s.burn)));
+    const remainingFuel=Math.max(0,totalFuel-burnFrac*totalFuel);
     burnedFuel+=burnFrac*totalFuel;
-    if(s.separated) droppedMass+=stageDryMass(s)+Math.max(0,totalFuel-burnFrac*totalFuel);
+    if(s.separated) droppedMass+=stageDryMass(s)+remainingFuel;
   });
-  return {total:Math.max(90,base-burnedFuel-droppedMass)};
+  const total=Math.max(90,base-burnedFuel-droppedMass);
+  return {total,base,burnedFuel,droppedMass,massLost:Math.max(0,base-total)};
+}
+
+function stackFuelForFlight(){
+  const totalFuel = launchState
+    ? launchState.stages.reduce((sum,s)=>sum+stageFuelMass(s),0)
+    : metrics().fuel;
+  if(!launchState) return {total:totalFuel,remaining:totalFuel,burned:0,dropped:0,pct:totalFuel?1:0};
+  let remaining=0,burned=0,dropped=0;
+  launchState.stages.forEach(s=>{
+    const total=stageFuelMass(s);
+    const burnFrac=Math.max(0,Math.min(1,(s.burn-s.remaining)/Math.max(.001,s.burn)));
+    const left=Math.max(0,total-burnFrac*total);
+    burned+=burnFrac*total;
+    if(s.separated) dropped+=left;
+    else remaining+=left;
+  });
+  return {total:totalFuel,remaining,burned,dropped,pct:totalFuel?remaining/totalFuel:0};
 }
 
 function liveRocketParts(){
@@ -1117,6 +1138,35 @@ function cowlingSVG(engineW, bodyW, h) {
   </svg>`;
 }
 
+function serviceModuleSVG(engineW, bodyW, h, part) {
+  // When a final-stage engine sits directly under the nose, a normal tapered
+  // cowling makes the rocket look like a nose glued to an engine bell. This
+  // short body tube gives the final stage a real fuselage/avionics section.
+  const W = Math.max(engineW, bodyW);
+  const tubeW = Math.min(W * 0.94, Math.max(bodyW * 0.96, engineW * 0.72));
+  const x = (W - tubeW) / 2;
+  const accent = (part?.screenNameX || '').includes('Liquid') ? '#1a6abf'
+    : (part?.screenNameX || '').includes('Hybrid') ? '#3a8828'
+    : (part?.screenNameX || '').includes('Magneto') ? '#6a28cc'
+    : part?.zany ? '#cc7a10' : '#cc1f28';
+  return `<svg width="${W}" height="${h}" viewBox="0 0 ${W} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="svc${part?.name || 'x'}" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%" stop-color="#788188"/>
+        <stop offset="18%" stop-color="#f4f6f4"/>
+        <stop offset="55%" stop-color="#d7dcda"/>
+        <stop offset="82%" stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#6f777d"/>
+      </linearGradient>
+    </defs>
+    <rect x="${x}" y="2" width="${tubeW}" height="${h-4}" rx="7" fill="url(#svc${part?.name || 'x'})" stroke="#1a1f24" stroke-width="1.5"/>
+    <rect x="${x+3}" y="${Math.max(6,h*.18)}" width="${tubeW-6}" height="3" fill="rgba(30,38,44,.32)"/>
+    <rect x="${x+3}" y="${h*.58}" width="${tubeW-6}" height="${Math.max(4,h*.12)}" fill="${accent}" opacity=".9"/>
+    <rect x="${x+tubeW*.15}" y="${h-6}" width="${tubeW*.70}" height="4" rx="2" fill="#232b31" opacity=".5"/>
+    <path d="M${x+2} 4 L${x+tubeW*.24} 4 L${x+tubeW*.15} ${h-6} L${x+2} ${h-6}Z" fill="rgba(255,255,255,.20)"/>
+  </svg>`;
+}
+
 
 function shroudedEngineSVG(p, w, h) {
   let accentColor='#cc1f28', bodyA='#8a9298', bodyB='#f0f4f0', bodyC='#6a7278';
@@ -1159,8 +1209,13 @@ function buildVisualLayout(parts, dimFn, cowlH, overlap=4){
       const nextDims = dimFn(nextPart, vi + 1);
       const cowlW = Math.max(w, nextDims.w);
       const cowlBottom = y + h - overlap;
-      cowls.push({afterIndex:vi, y:cowlBottom, h:cowlH, w:cowlW, top:cowlBottom+cowlH, engineW:w, bodyW:nextDims.w});
-      y += h - overlap + cowlH - overlap;
+      const directToNose = nextPart.pieceType === 'NosePiece';
+      const adapterH = directToNose ? Math.round(cowlH * 1.65) : cowlH;
+      cowls.push({
+        afterIndex:vi, y:cowlBottom, h:adapterH, w:cowlW, top:cowlBottom+adapterH,
+        engineW:w, bodyW:nextDims.w, kind:directToNose ? 'service-module' : 'cowling', part:p
+      });
+      y += h - overlap + adapterH - overlap;
     } else {
       y += h - overlap;
     }
@@ -1242,7 +1297,9 @@ function renderRocket(){
     cowlDiv.className = 'seg';
     cowlDiv.style.cssText = `width:${cowl.w}px;height:${cowl.h}px;bottom:${cowl.y}px;`
       + `left:50%;margin-left:${-cowl.w/2}px;z-index:9;`;
-    cowlDiv.innerHTML = cowlingSVG(cowl.engineW, cowl.bodyW, cowl.h);
+    cowlDiv.innerHTML = cowl.kind === 'service-module'
+      ? serviceModuleSVG(cowl.engineW, cowl.bodyW, cowl.h, cowl.part)
+      : cowlingSVG(cowl.engineW, cowl.bodyW, cowl.h);
     mount.appendChild(cowlDiv);
   });
 
@@ -1504,6 +1561,11 @@ function formatSpeed(v){
   if(v<1000) return `${Math.round(v)} m/s`;
   return `${(v/1000).toFixed(2)} km/s`;
 }
+function formatMass(kg){
+  if(!isFinite(kg)||kg<=0) return '0 kg';
+  if(kg<10000) return `${Math.round(kg).toLocaleString()} kg`;
+  return `${(kg/1000).toFixed(1)} t`;
+}
 
 // ── Image cache kept for debris (fallback only) ──
 const imgCache=new Map();
@@ -1674,6 +1736,36 @@ function drawCowlingCanvas(x, y, botW, topW, h) {
   ctx.fillRect(x - tW/2 + 1, y - h + h*0.18, tW - 2, h*0.14);
 }
 
+function drawServiceModuleCanvas(part, x, y, engineW, bodyW, h){
+  // A short cylindrical module for final stages: nose → body tube → engine.
+  const W = Math.max(engineW, bodyW);
+  const tubeW = Math.min(W * 0.94, Math.max(bodyW * 0.96, engineW * 0.72));
+  let accent = '#cc1f28';
+  if(part?.screenNameX?.includes('Liquid')) accent = '#1a6abf';
+  else if(part?.screenNameX?.includes('Hybrid')) accent = '#3a8828';
+  else if(part?.screenNameX?.includes('Magneto')) accent = '#6a28cc';
+  else if(part?.zany) accent = '#cc7a10';
+
+  ctx.save();
+  ctx.translate(x, y);
+  const g = ctx.createLinearGradient(-tubeW/2, 0, tubeW/2, 0);
+  g.addColorStop(0, '#788188');
+  g.addColorStop(.18, '#f4f6f4');
+  g.addColorStop(.55, '#d7dcda');
+  g.addColorStop(.82, '#ffffff');
+  g.addColorStop(1, '#6f777d');
+  ctx.fillStyle = g;
+  ctx.strokeStyle = '#1a1f24';
+  ctx.lineWidth = 1.5;
+  rr(-tubeW/2, -h + 2, tubeW, h - 4, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(30,38,44,.32)'; ctx.fillRect(-tubeW/2 + 3, -h + Math.max(6,h*.18), tubeW - 6, 3);
+  ctx.fillStyle = accent; ctx.globalAlpha = .9; ctx.fillRect(-tubeW/2 + 3, -h + h*.58, tubeW - 6, Math.max(4,h*.12)); ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(35,43,49,.5)'; rr(-tubeW*.35, -6, tubeW*.70, 4, 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.18)';
+  ctx.beginPath(); ctx.moveTo(-tubeW/2 + 2, -h + 4); ctx.lineTo(-tubeW*.26, -h + 4); ctx.lineTo(-tubeW*.35, -6); ctx.lineTo(-tubeW/2 + 2, -6); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
 
 function drawShroudedEngineCanvas(part, x, y, w, h) {
   ctx.save();
@@ -1757,7 +1849,8 @@ function drawRocketAssembly(parts, fins=[], burning=false, showFins=true, showSe
   });
 
   layout.cowls.forEach(cowl => {
-    drawCowlingCanvas(0, -cowl.y, cowl.engineW, cowl.bodyW, cowl.h);
+    if(cowl.kind === 'service-module') drawServiceModuleCanvas(cowl.part, 0, -cowl.y, cowl.engineW, cowl.bodyW, cowl.h);
+    else drawCowlingCanvas(0, -cowl.y, cowl.engineW, cowl.bodyW, cowl.h);
   });
 
   if(showSeams) drawCanvasStageSeams(layout, stageOffset);
@@ -2054,7 +2147,11 @@ function updateHUD(){
     document.getElementById('hudAlt').textContent='0 m';
     document.getElementById('hudSpeed').textContent='0 m/s';
     document.getElementById('hudZone').textContent='Launch Pad';
+    document.getElementById('hudMass').textContent='—';
+    document.getElementById('hudMass').className='hud-val';
     document.getElementById('hudTW').textContent='—';
+    document.getElementById('hudFuel').textContent='—';
+    document.getElementById('hudFuel').className='hud-val';
     document.getElementById('hudScore').textContent='0';
     document.getElementById('burnFill').style.width='0%';
     return;
@@ -2065,6 +2162,15 @@ function updateHUD(){
   document.getElementById('hudSpeed').textContent=formatSpeed(Math.max(0,launchState.velocity));
   document.getElementById('hudZone').textContent=band.name;
   document.getElementById('hudScore').textContent=launchState.score||0;
+
+  const massInfo=stackMassForFlight();
+  const fuelInfo=stackFuelForFlight();
+  const massEl=document.getElementById('hudMass');
+  massEl.textContent=formatMass(massInfo.total);
+  massEl.className='hud-val'+(launchState.initialMass&&massInfo.total<launchState.initialMass*.94?' good':'');
+  const fuelEl=document.getElementById('hudFuel');
+  fuelEl.textContent=fuelInfo.total>0?`${Math.round(fuelInfo.pct*100)}% · ${formatMass(fuelInfo.remaining)}`:'—';
+  fuelEl.className='hud-val'+(fuelInfo.total>0&&fuelInfo.pct<.2?' warn':'');
 
   document.getElementById('hudStage').textContent=stageStatusText();
 
@@ -2256,18 +2362,20 @@ function openLaunch(){
     totalQuality:0,done:false,last:performance.now(),
     stageWindow:false,events:[],milestones:new Set(),
     shake:0,maxAltitude:0,score:0,trail:[],debris:[],stageDebris:[],sepParticles:[],
-    gravity:9.81,liveTwr:0,accel:0,startTime:0,
+    gravity:9.81,liveTwr:0,accel:0,startTime:0,initialMass:0,initialFuel:0,
     coastSpeed:1,apogeeAssist:false,sepFlash:0,sepCinematic:0,
     stagingFeedback:[],stagingBonus:0,
     tooHeavyWarned:false,
   };
+  launchState.initialMass=stackMassForFlight().total;
+  launchState.initialFuel=stackFuelForFlight().total;
   coastIdx=0;
   document.getElementById('commitBtn').disabled=false;
   document.getElementById('commitBtn').textContent='IGNITE STAGE 1';
   document.getElementById('nextBtn').disabled=true;
   document.getElementById('nextBtn').textContent=stages.length>1?'STAGE 2 ARMED':'FINAL STAGE';
   document.getElementById('speedBtn').textContent='COAST 1×';
-  setResult('<div class="result-icon">🚀</div><div><div class="result-cue">Hit <b>IGNITE STAGE 1</b> when the needle is in the <b style="color:var(--green)">green zone</b>. Stage right after burnout.</div></div>');
+  setResult('<div class="result-icon">🚀</div><div><div class="result-cue">Hit <b>IGNITE STAGE 1</b> when the needle is in the <b style="color:var(--green)">green zone</b>. Watch <b>LIVE MASS</b> drop as fuel burns, then stage right after burnout.</div></div>');
   updateHUD();
   drawScene(400,0,false);
   tickNeedle();
