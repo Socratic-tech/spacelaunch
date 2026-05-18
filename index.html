@@ -580,123 +580,92 @@ function partSVG(p, w=44, h=44){
   const t = p.pieceType;
   const cx=w/2, cy=h/2;
 
-  // Color palette per engine type
-  let bodyFill='#d0d4d8', accentFill='#cc1f28', nozzleFill='#6a7278';
-  if(p.name.startsWith('Engine_')){
-    const n=parseInt(p.name.split('_')[1]);
-    if(p.screenNameX.includes('Liquid')){bodyFill='#b8d4f0';accentFill='#1a6abf';nozzleFill='#4a8ac4';}
-    else if(p.screenNameX.includes('Hybrid')){bodyFill='#d4e8b8';accentFill='#3a8a28';nozzleFill='#5aaa48';}
-    else if(p.screenNameX.includes('Magneto')){bodyFill='#d8c8f8';accentFill='#6a28cc';nozzleFill='#8a48dc';}
-    else if(p.zany){bodyFill='#f8e0b0';accentFill='#cc7a10';nozzleFill='#e8a030';}
-  }
+  // Engine color palette by fuel type
+  let bodyColor='#c8cece', accentColor='#cc1f28', nozzleTop='#8a9298', nozzleBot='#4a5258';
+  if(p.screenNameX&&p.screenNameX.includes('Liquid')){bodyColor='#b8d4f0';accentColor='#1a6abf';nozzleTop='#4a8ac0';nozzleBot='#1a3a60';}
+  else if(p.screenNameX&&p.screenNameX.includes('Hybrid')){bodyColor='#c8e8b0';accentColor='#3a8828';nozzleTop='#5aa840';nozzleBot='#1e4a18';}
+  else if(p.screenNameX&&p.screenNameX.includes('Magneto')){bodyColor='#d8c8f8';accentColor='#6a28cc';nozzleTop='#8a48dc';nozzleBot='#3a1880';}
+  else if(p.zany){bodyColor='#f8e0b0';accentColor='#cc7a10';nozzleTop='#e8a030';nozzleBot='#805010';}
 
   if(t==='EnginePiece'){
-    // Body cylinder + red band + nozzle bell
+    // A proper rocket engine: combustion chamber cylinder + tapered nozzle bell
+    const chamberH = h * 0.52;
+    const nozzleH  = h * 0.48;
+    const chamberW = w * 0.72;
+    const nozzleTopW = w * 0.58;
+    const nozzleBotW = w * 0.94;
+    const cx2 = w/2;
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="eg${p.name}" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stop-color="#888d92"/>
-          <stop offset="20%" stop-color="${bodyFill}"/>
-          <stop offset="55%" stop-color="#c8cdd0"/>
-          <stop offset="80%" stop-color="#f0f2f0"/>
-          <stop offset="100%" stop-color="#7a8288"/>
+        <linearGradient id="cham${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%"   stop-color="#7a8288"/>
+          <stop offset="18%"  stop-color="${bodyColor}"/>
+          <stop offset="55%"  stop-color="#d0d4d0"/>
+          <stop offset="80%"  stop-color="#f0f4f0"/>
+          <stop offset="100%" stop-color="#6a7278"/>
         </linearGradient>
-        <linearGradient id="nz${p.name}" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stop-color="#3a4248"/>
-          <stop offset="45%" stop-color="${nozzleFill}"/>
+        <linearGradient id="nozz${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%"   stop-color="#383e44"/>
+          <stop offset="40%"  stop-color="${nozzleTop}"/>
+          <stop offset="70%"  stop-color="#888e94"/>
           <stop offset="100%" stop-color="#282e34"/>
         </linearGradient>
       </defs>
-      <!-- body -->
-      <rect x="6" y="6" width="${w-12}" height="${h*0.48}" rx="4" fill="url(#eg${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
-      <!-- red stripe -->
-      <rect x="7" y="${h*0.3}" width="${w-14}" height="4" fill="${accentFill}" stroke="rgba(255,255,255,.3)" stroke-width=".5"/>
-      <!-- nozzle bell -->
-      <polygon points="${cx-8},${h*0.54} ${cx+8},${h*0.54} ${cx+14},${h-4} ${cx-14},${h-4}"
-        fill="url(#nz${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
-      <!-- nozzle throat -->
-      <ellipse cx="${cx}" cy="${h*0.54}" rx="8" ry="3" fill="#1a2028" stroke="#0a0e12" stroke-width="1"/>
-    </svg>`;
-  }
-
-  if(t==='FuelPiece'){
-    const tankH=h*0.78, tankY=(h-tankH)/2;
-    let liqColor='#4ab4e8', liqBg='#1a3050';
-    if(p.name==='Fuel_2'){liqColor='#60d488';liqBg='#0e2a18';}
-    if(p.name==='Fuel_3'){liqColor='#e880a8';liqBg='#301828';}
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="tg${p.name}" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stop-color="#888d92"/>
-          <stop offset="22%" stop-color="#e0e4e8"/>
-          <stop offset="60%" stop-color="#c4c8cc"/>
-          <stop offset="82%" stop-color="#f4f6f4"/>
-          <stop offset="100%" stop-color="#787e84"/>
-        </linearGradient>
-      </defs>
-      <!-- tank body -->
-      <rect x="7" y="${tankY}" width="${w-14}" height="${tankH}" rx="5" fill="${liqBg}" stroke="#1a1f24" stroke-width="1.5"/>
-      <!-- fuel fill (full) -->
-      <rect x="8.5" y="${tankY+1.5}" width="${w-17}" height="${tankH*0.88}" rx="3.5" fill="${liqColor}" opacity=".7"/>
-      <!-- sheen -->
-      <rect x="8.5" y="${tankY+1.5}" width="${w-17}" height="${tankH*0.88}" rx="3.5"
-        fill="url(#tg${p.name})" opacity=".45"/>
-      <!-- top cap -->
-      <rect x="11" y="${tankY-3}" width="${w-22}" height="5" rx="2" fill="#a0a8b0" stroke="#1a1f24" stroke-width="1"/>
-      <!-- bottom fitting -->
-      <rect x="14" y="${tankY+tankH-1}" width="${w-28}" height="5" rx="2" fill="#8a9098" stroke="#1a1f24" stroke-width="1"/>
-    </svg>`;
-  }
-
-  if(t==='NosePiece'){
-    let tipColor='#cc1f28';
-    if(p.screenNameX.includes('Ogive')){tipColor='#cc6818';}
-    if(p.screenNameX.includes('Clown')){tipColor='#e82878';}
-    if(p.screenNameX.includes('Jewel')){tipColor='#7828cc';}
-    if(p.screenNameX.includes('Schnoz')||p.screenNameX.includes('Shark')){tipColor='#286acc';}
-    const noseW=w-10;
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="ng${p.name}" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stop-color="#888d92"/>
-          <stop offset="25%" stop-color="#e4e8e8"/>
-          <stop offset="55%" stop-color="#c4c8c8"/>
-          <stop offset="82%" stop-color="#f6f8f6"/>
-          <stop offset="100%" stop-color="#787e84"/>
-        </linearGradient>
-      </defs>
-      <!-- cone body -->
-      <polygon points="${cx},4 ${cx+noseW/2},${h-6} ${cx-noseW/2},${h-6}"
-        fill="url(#ng${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
-      <!-- tip color -->
-      <polygon points="${cx},4 ${cx+noseW*.22},${h*0.36} ${cx-noseW*.22},${h*0.36}"
-        fill="${tipColor}" opacity=".9"/>
-      <!-- base ring -->
-      <rect x="${cx-noseW/2}" y="${h-8}" width="${noseW}" height="5" rx="2"
-        fill="#8a9098" stroke="#1a1f24" stroke-width="1"/>
+      <!-- combustion chamber -->
+      <rect x="${cx2-chamberW/2}" y="0" width="${chamberW}" height="${chamberH}" rx="4"
+        fill="url(#cham${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <!-- accent band -->
+      <rect x="${cx2-chamberW/2+1}" y="${chamberH*0.55}" width="${chamberW-2}" height="${chamberH*0.14}"
+        fill="${accentColor}" opacity=".92"/>
+      <!-- nozzle bell — tapers outward toward bottom -->
+      <polygon
+        points="${cx2-nozzleTopW/2},${chamberH} ${cx2+nozzleTopW/2},${chamberH} ${cx2+nozzleBotW/2},${h} ${cx2-nozzleBotW/2},${h}"
+        fill="url(#nozz${p.name})" stroke="#1a1f24" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- throat ring -->
+      <ellipse cx="${cx2}" cy="${chamberH}" rx="${nozzleTopW/2}" ry="3.5"
+        fill="${nozzleBot}" stroke="#0a0e12" stroke-width="1"/>
+      <!-- chamber top cap -->
+      <rect x="${cx2-chamberW/2+1}" y="0" width="${chamberW-2}" height="5" rx="2"
+        fill="#a0a8b0" opacity=".7"/>
     </svg>`;
   }
 
   if(t==='FinPiece'){
-    let finColor='#7a8288', rivetColor='#555c62';
-    if(p.screenNameX.includes('Dragon')){finColor='#8a2828';rivetColor='#cc4040';}
-    if(p.screenNameX.includes('Shark')){finColor='#284888';rivetColor='#4878c8';}
+    // Clean swept delta fin — no studs, aerodynamic
+    let mainColor='#8a9098', edgeColor='#5a6268', sheen='rgba(255,255,255,0.18)';
+    if(p.screenNameX&&p.screenNameX.includes('Dragon')){mainColor='#8a2828';edgeColor='#cc4040';}
+    if(p.screenNameX&&p.screenNameX.includes('Shark')){mainColor='#284888';edgeColor='#4878c8';}
+    // Fin shape varies by name
+    let pts;
+    if(p.name==='Fin_2'||p.name==='Fin_5'){
+      // Wide flat delta — low aspect ratio
+      pts=`${w*0.08},0 ${w*0.92},0 ${w},${h} 0,${h}`;
+    } else if(p.name==='Fin_6'){
+      // Tall narrow shark fin
+      pts=`${w*0.5},0 ${w*0.85},${h*0.4} ${w*0.85},${h} ${w*0.15},${h}`;
+    } else if(p.name==='Wing_1'){
+      // Dragon wing — wider sweep
+      pts=`0,${h*0.3} ${w*0.6},0 ${w},${h*0.2} ${w},${h} 0,${h}`;
+    } else {
+      // Standard swept delta
+      pts=`${w*0.2},0 ${w*0.9},${h*0.3} ${w},${h} 0,${h}`;
+    }
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="fg${p.name}" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="${finColor}" stop-opacity=".7"/>
-          <stop offset="100%" stop-color="${finColor}"/>
+        <linearGradient id="fin${p.name}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"   stop-color="${edgeColor}"/>
+          <stop offset="100%" stop-color="${mainColor}"/>
         </linearGradient>
       </defs>
-      <!-- fin plate -->
-      <polygon points="4,${h-4} ${w-4},${h-4} ${w-10},8 10,14"
-        fill="url(#fg${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
-      <!-- rivets -->
-      <circle cx="12" cy="${h-12}" r="2.5" fill="${rivetColor}"/>
-      <circle cx="22" cy="${h-12}" r="2.5" fill="${rivetColor}"/>
-      <circle cx="32" cy="${h-12}" r="2.5" fill="${rivetColor}"/>
-      <circle cx="17" cy="${h-22}" r="2.5" fill="${rivetColor}"/>
-      <circle cx="27" cy="${h-22}" r="2.5" fill="${rivetColor}"/>
+      <!-- main fin plate -->
+      <polygon points="${pts}" fill="url(#fin${p.name})" stroke="#1a1f24" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- leading edge highlight -->
+      <polygon points="${pts}" fill="${sheen}" stroke="none"/>
+      <!-- structural riblines -->
+      <line x1="${w*0.35}" y1="${h*0.15}" x2="${w*0.15}" y2="${h*0.85}"
+        stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
+      <line x1="${w*0.6}" y1="${h*0.25}" x2="${w*0.45}" y2="${h*0.85}"
+        stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
     </svg>`;
   }
 
@@ -1041,11 +1010,21 @@ function finDims(p) {
   return { w: Math.round(d.nw * scale), h: Math.round(d.nh * scale) };
 }
 
-function spriteImg(p, w, h, extraStyle='') {
-  const src = 'assets/' + (PART_ART[p.name] || 'img_1678_lossless.png').replace('assets/','');
+// Parts whose PNG sprites contain Lego studs — render as SVG instead
+const SVG_ONLY_TYPES = new Set(['EnginePiece','FinPiece']);
+const SVG_ONLY_NAMES = new Set([
+  'SRB_1','SRB_2','SRB_3','Orbiter_1','Orbiter_2'  // also studded/branded
+]);
+
+function spriteImg(p, w, h) {
+  // Use SVG for engines, fins, and studded parts
+  if (SVG_ONLY_TYPES.has(p.pieceType) || SVG_ONLY_NAMES.has(p.name)) {
+    return `<div style="width:${w}px;height:${h}px">${partSVG(p,w,h)}</div>`;
+  }
+  const src = 'assets/' + (PART_ART[p.name] || 'img_1685_lossless.png').replace('assets/','');
   return `<img src="${src}" alt="${p.screenNameX}"
-    style="width:${w}px;height:${h}px;object-fit:fill;display:block;image-rendering:pixelated;${extraStyle}"
-    onerror="this.replaceWith(document.createRange().createContextualFragment(\`${partSVG(p,w,h).replace(/`/g,"'")}\`))">`;
+    style="width:${w}px;height:${h}px;object-fit:fill;display:block;image-rendering:auto"
+    onerror="this.replaceWith(document.createRange().createContextualFragment(\`<div style='width:${w}px;height:${h}px'>${partSVG(p,w,h).replace(/`/g,"'")}</div>\`))">`;
 }
 
 // ── Procedural cowling: bridges the engine bell to the body above it ──
@@ -1382,13 +1361,17 @@ function canvasPieceDims(p) {
 }
 
 function drawSpriteOrVector(part, x, y, w, h, mirror, fuelRatio) {
+  // Always use vector for engines and fins (sprites have Lego studs)
+  if (SVG_ONLY_TYPES.has(part.pieceType) || SVG_ONLY_NAMES.has(part.name)) {
+    drawPartCanvas(part, x, y, w, h, mirror, fuelRatio);
+    return;
+  }
   const img = getSprite(part);
   if (img.complete && img.naturalWidth > 0) {
     ctx.save();
     ctx.translate(x, y);
     if (mirror) ctx.scale(-1, 1);
     ctx.drawImage(img, -w/2, -h, w, h);
-    // Fuel level overlay: darken the upper empty portion of tanks
     if ((part.pieceType==='FuelPiece'||part.pieceType==='SRBPiece') && fuelRatio < 1) {
       const emptyH = h * (1 - Math.max(0, fuelRatio));
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
