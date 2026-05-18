@@ -76,6 +76,16 @@ header{
 .school-big-btn.secondary{background:var(--panel2);color:var(--text);border-color:var(--border2);box-shadow:none}
 .school-big-btn:hover{filter:brightness(1.08)}
 .school-steps{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:2px}
+.school-lesson-list{display:grid;grid-template-columns:1fr;gap:6px;margin-top:2px}
+.school-lesson-card-btn{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;text-align:left;padding:8px 9px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.035);color:var(--text);font-family:var(--font-ui);cursor:pointer}
+.school-lesson-card-btn:hover{border-color:rgba(245,196,0,.38);background:rgba(245,196,0,.06)}
+.school-lesson-card-btn.active{border-color:rgba(0,232,122,.42);background:rgba(0,232,122,.08)}
+.school-lesson-card-btn.locked{opacity:.58;cursor:not-allowed;background:rgba(255,255,255,.025)}
+.school-lesson-num{font-family:var(--font-hud);font-size:11px;color:var(--accent);min-width:28px}
+.school-lesson-name{font-family:var(--font-ui);font-size:13px;font-weight:800;line-height:1.1;color:var(--text)}
+.school-lesson-meta{font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px;line-height:1.25}
+.school-lesson-status{font-family:var(--font-mono);font-size:9px;color:var(--green);white-space:nowrap}
+.school-lesson-card-btn.locked .school-lesson-status{color:var(--muted)}
 .school-step{height:8px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border2);cursor:pointer}
 .school-step.unlocked{background:rgba(245,196,0,.18);border-color:rgba(245,196,0,.35)}
 .school-step.active{background:var(--green);border-color:var(--green);box-shadow:0 0 8px rgba(0,232,122,.35)}
@@ -1236,8 +1246,22 @@ function renderRocketSchool(){
   if(label) label.textContent=`LEVEL ${easySchoolLevel+1} / ${ROCKET_SCHOOL_LESSONS.length}`;
   const steps=ROCKET_SCHOOL_LESSONS.map((lesson,i)=>{
     const cls=i===activeSchoolLesson?'active':(i<=easySchoolLevel?'unlocked':'locked');
-    const title=i<=easySchoolLevel?`Select ${lesson.level}: ${lesson.title}`:'Locked';
+    const title=i<=easySchoolLevel?`Select ${lesson.level}: ${lesson.title}`:`Locked — complete ${ROCKET_SCHOOL_LESSONS[Math.max(0,i-1)].level} first`;
     return `<button class="school-step ${cls}" title="${title}" onclick="selectSchoolLesson(${i})"></button>`;
+  }).join('');
+  const lessonList=ROCKET_SCHOOL_LESSONS.map((lesson,i)=>{
+    const locked=i>easySchoolLevel;
+    const active=i===activeSchoolLesson;
+    const status=locked?`LOCKED`:(active?'ACTIVE':'OPEN');
+    const unlock=locked?`Complete ${ROCKET_SCHOOL_LESSONS[Math.max(0,i-1)].level} to unlock.`:lesson.goal.replace('Goal: ','');
+    return `<button class="school-lesson-card-btn ${active?'active':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="selectSchoolLesson(${i})">
+      <span class="school-lesson-num">${i+1}</span>
+      <span>
+        <span class="school-lesson-name">${lesson.title}</span>
+        <span class="school-lesson-meta">${unlock}</span>
+      </span>
+      <span class="school-lesson-status">${status}</span>
+    </button>`;
   }).join('');
   body.innerHTML=`<div class="school-card">
     <div class="school-top">
@@ -1254,8 +1278,9 @@ function renderRocketSchool(){
       <button class="school-big-btn secondary" onclick="openLaunch()">▶ LAUNCH LESSON</button>
     </div>
     <div class="school-steps">${steps}</div>
+    <div class="school-lesson-list">${lessonList}</div>
     <div class="school-words ${schoolWordsVisible()?'show':''}">${l.words}</div>
-    <div class="school-note">New buttons and parts unlock only after students complete each level. The full part catalog stays optional below.</div>
+    <div class="school-note">All six Rocket School lessons are visible now. Locked lessons open after students complete the level before them.</div>
   </div>`;
 }
 function completeSchoolLessonIfReady(altitude){
