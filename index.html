@@ -195,6 +195,27 @@ header{
 .fin-el{position:absolute;z-index:8;overflow:visible;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
 .fin-el img{width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto}
 
+
+/* ─── STAGE SEPARATION MARKERS ─── */
+.stage-ring{
+  position:absolute;left:50%;height:8px;transform:translateX(-50%);
+  z-index:13;pointer-events:none;border-radius:999px;
+  background:linear-gradient(180deg,#f3f6f8,#7d8790 48%,#252c32 52%,#dfe5e8);
+  border:1px solid rgba(18,25,31,.85);
+  box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 0 10px rgba(245,196,0,.25),0 3px 5px rgba(0,0,0,.25);
+}
+.stage-ring::before,.stage-ring::after{
+  content:"";position:absolute;top:50%;width:5px;height:5px;border-radius:50%;
+  transform:translateY(-50%);background:#24313a;border:1px solid rgba(255,255,255,.35);
+}
+.stage-ring::before{left:7px}.stage-ring::after{right:7px}
+.stage-label-tag{
+  position:absolute;z-index:14;pointer-events:none;
+  font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;
+  color:#102035;background:rgba(245,196,0,.9);border:1px solid rgba(70,50,0,.45);
+  border-radius:4px;padding:2px 5px;box-shadow:0 2px 4px rgba(0,0,0,.25);
+}
+
 /* ─── STATS PANEL ─── */
 .stat-row{margin-bottom:10px}
 .stat-label{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:4px}
@@ -1184,6 +1205,26 @@ function renderRocket(){
     mount.appendChild(cowlDiv);
   });
 
+  // Mark each upper-stage seam so staging is visible before launch.
+  let seenEngines = 0;
+  layout.segments.forEach(({p, y, w}) => {
+    if(p.pieceType !== 'EnginePiece') return;
+    seenEngines += 1;
+    if(seenEngines <= 1) return;
+
+    const ring = document.createElement('div');
+    ring.className = 'stage-ring';
+    const rw = Math.round(w * 1.08);
+    ring.style.cssText = `width:${rw}px;bottom:${Math.max(0,y-4)}px;margin-left:${-rw/2}px;`;
+    mount.appendChild(ring);
+
+    const label = document.createElement('div');
+    label.className = 'stage-label-tag';
+    label.textContent = `STAGE ${seenEngines}`;
+    label.style.cssText = `bottom:${Math.max(0,y+5)}px;left:${130 + rw/2 + 7}px;`;
+    mount.appendChild(label);
+  });
+
   // Fins attach to the lowest body-width structure — cowling/body tube — not the nozzle.
   const anchor = lowestFinAnchor(layout);
   if(build.fins.length && anchor) {
@@ -1488,21 +1529,55 @@ function drawCowlingCanvas(x, y, botW, topW, h) {
   ctx.fillRect(x - tW/2 + 1, y - h + h*0.18, tW - 2, h*0.14);
 }
 
-function drawCanvasRocket(burning){
-  const parts = liveRocketParts();
+function drawCanvasSeparatorBand(x, y, w, label='', alpha=1){
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, y);
+  const h = 7;
+  const g = ctx.createLinearGradient(-w/2, -h/2, -w/2, h/2);
+  g.addColorStop(0, '#f6f8fa');
+  g.addColorStop(.42, '#8a949d');
+  g.addColorStop(.55, '#232a30');
+  g.addColorStop(1, '#dce3e6');
+  ctx.fillStyle = g;
+  rr(-w/2, -h/2, w, h, 4); ctx.fill();
+  ctx.strokeStyle = 'rgba(18,25,31,.9)'; ctx.lineWidth = 1.2; rr(-w/2, -h/2, w, h, 4); ctx.stroke();
+  ctx.fillStyle = '#24313a';
+  [-w*.36, w*.36].forEach(bx => { ctx.beginPath(); ctx.arc(bx, 0, 2.3, 0, Math.PI*2); ctx.fill(); });
+  if(label){
+    ctx.font='bold 9px "Share Tech Mono",monospace';
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(245,196,0,.92)';
+    ctx.fillText(label, w/2 + 8, 3);
+  }
+  ctx.restore();
+}
+
+function drawCanvasStageSeams(layout, stageOffset=0){
+  if(!layout?.segments?.length) return;
+  let seenEngines = 0;
+  layout.segments.forEach(({p, y, w}) => {
+    if(p.pieceType !== 'EnginePiece') return;
+    seenEngines += 1;
+    if(seenEngines <= 1) return;
+    drawCanvasSeparatorBand(0, -y, Math.round(w * 1.08), `STAGE ${stageOffset + seenEngines}`, .95);
+  });
+}
+
+function stageAssemblyHeight(parts){
+  if(!parts?.length) return 0;
+  return buildVisualLayout(parts, canvasPieceDims, 20, 3).totalHeight;
+}
+
+function drawRocketAssembly(parts, fins=[], burning=false, showFins=true, showSeams=true, stageOffset=0){
   const COWL_H = 20;
   const layout = buildVisualLayout(parts, canvasPieceDims, COWL_H, 3);
 
   // Draw fins first so the rocket body/cowling masks the attachment edge.
-  // This matches the editor layering and avoids fins visually slicing through
-  // the nose/body tube.
-  // Show fins while the rocket is sitting on the pad before ignition (current === -1)
-  // and during the first-stage burn (current === 0). Hide them only after the
-  // fin-bearing lower stage has separated during later stages.
-  const showFins = !launchState || (launchState.current ?? -1) <= 0;
   const anchor = lowestFinAnchor(layout);
-  if (showFins && build.fins.length && anchor) {
-    build.fins.map(getPart).filter(Boolean).slice(0, 4).forEach((part, i) => {
+  if (showFins && fins.length && anchor) {
+    fins.slice(0, 4).forEach((part, i) => {
+      if(!part) return;
       const isLeft = i % 2 === 0;
       const pair = Math.floor(i / 2);
       const fd = finDims(part);
@@ -1521,6 +1596,8 @@ function drawCanvasRocket(burning){
     drawCowlingCanvas(0, -cowl.y, cowl.engineW, cowl.bodyW, cowl.h);
   });
 
+  if(showSeams) drawCanvasStageSeams(layout, stageOffset);
+
   // Engine flame below the rocket
   if (burning) {
     const flicker = Math.random() * 22;
@@ -1538,6 +1615,19 @@ function drawCanvasRocket(burning){
       ctx.beginPath();ctx.arc((Math.random()-.5)*22,22+Math.random()*(56+flicker),1.5,0,Math.PI*2);ctx.fill();
     }
   }
+
+  return layout;
+}
+
+function drawCanvasRocket(burning){
+  const parts = liveRocketParts();
+
+  // Show fins while the rocket is sitting on the pad before ignition (current === -1)
+  // and during the first-stage burn (current === 0). Hide them only after the
+  // fin-bearing lower stage has separated during later stages.
+  const showFins = !launchState || (launchState.current ?? -1) <= 0;
+  const fins = build.fins.map(getPart).filter(Boolean);
+  drawRocketAssembly(parts, fins, burning, showFins, true, launchState ? Math.max(0, launchState.current) : 0);
 }
 
 function drawCloud(x,y,s,a){
@@ -1601,12 +1691,51 @@ function drawAltScale(){
   ctx.restore();
 }
 
-function drawDebris(){
-  if(!launchState?.debris?.length)return;
-  launchState.debris.forEach(d=>{
-    ctx.save();ctx.translate(510+d.x,270+d.y+d.age*38);ctx.rotate(d.rot);
-    drawPartCanvas(d.part,0,0,36,36);ctx.restore();
-  });
+function drawDebris(rocketY=250){
+  if(!launchState)return;
+
+  // Whole-stage debris: the dropped lower stage visibly falls away instead of vanishing.
+  if(launchState.stageDebris?.length){
+    launchState.stageDebris.forEach(d=>{
+      const h = stageAssemblyHeight(d.parts);
+      const fade = Math.max(0, 1 - d.age / 4.8);
+      ctx.save();
+      ctx.globalAlpha = Math.min(.95, fade);
+      ctx.translate(510 + d.x, rocketY + h + 24 + d.y);
+      ctx.rotate(d.rot);
+      const shrink = Math.max(.52, 1 - d.age * .035);
+      ctx.scale(shrink, shrink);
+      drawRocketAssembly(d.parts, d.fins || [], false, !!(d.fins?.length), false);
+      drawCanvasSeparatorBand(0, -h, 74, d.label || 'SEPARATED', .85);
+      ctx.restore();
+    });
+  }
+
+  // Small chips/sparks that trail the separation event.
+  if(launchState.debris?.length){
+    launchState.debris.forEach(d=>{
+      ctx.save();
+      ctx.globalAlpha=Math.max(0,1-d.age/3.2);
+      ctx.translate(510+d.x,rocketY+42+d.y+d.age*18);
+      ctx.rotate(d.rot);
+      drawPartCanvas(d.part,0,0,28,28);
+      ctx.restore();
+    });
+  }
+
+  // Smoke/gas puff at the seam.
+  if(launchState.sepParticles?.length){
+    launchState.sepParticles.forEach(p=>{
+      const a=Math.max(0,1-p.age/p.life);
+      ctx.save();
+      ctx.globalAlpha=a*.55;
+      ctx.fillStyle='rgba(235,240,236,.9)';
+      ctx.beginPath();
+      ctx.ellipse(510+p.x, rocketY+p.y, p.r*(1+p.age*1.3), p.r*.55*(1+p.age*1.1), 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
 }
 
 function drawScene(rocketY,tilt,burning,finished=false){
@@ -1678,10 +1807,12 @@ function drawScene(rocketY,tilt,burning,finished=false){
   const shake=launchState?.shake||0;
   const sx=(Math.random()-.5)*shake, sy=(Math.random()-.5)*shake;
 
-  drawDebris();
+  drawDebris(rocketY);
 
-  // Rocket
-  ctx.save();ctx.translate(sx,sy);ctx.translate(510,rocketY);ctx.rotate(tilt);
+  // Rocket — add a quick cinematic push-in during separation so kids can see it happen.
+  const sepFocus = launchState?.sepCinematic || 0;
+  const zoom = sepFocus > 0 ? 1 + Math.sin(Math.min(1, sepFocus) * Math.PI) * .055 : 1;
+  ctx.save();ctx.translate(sx,sy);ctx.translate(510,rocketY);ctx.scale(zoom,zoom);ctx.rotate(tilt);
   drawCanvasRocket(burning);ctx.restore();
 
   // Stage separation flash
@@ -1724,6 +1855,35 @@ function addEvent(text,type='cue'){
 
 function setResult(html){ document.getElementById('resultBar').innerHTML=html; }
 
+function stageStatusText(){
+  if(!launchState) return '—';
+  if(launchState.current < 0) return `${launchState.stages.length} stages ready`;
+  const st = launchState.stages[launchState.current];
+  if(!st) return `${launchState.stages.length} stages ready`;
+  const next = launchState.current + 1;
+  if(st.spent && next < launchState.stages.length) return `Stage ${launchState.current+1} burnout → Stage ${next+1} armed`;
+  const status = st.spent ? 'SPENT' : (st.ignited ? 'BURNING' : 'ARMED');
+  return `Stage ${launchState.current+1}/${launchState.stages.length} · ${status}`;
+}
+
+function refreshStageButton(){
+  const btn = document.getElementById('nextBtn');
+  if(!btn || !launchState) return;
+  if(launchState.current < 0){
+    btn.textContent = launchState.stages.length > 1 ? 'STAGE 2 ARMED' : 'FINAL STAGE';
+    return;
+  }
+  const cur = launchState.stages[launchState.current];
+  const next = launchState.current + 1;
+  if(next < launchState.stages.length){
+    btn.textContent = cur?.spent
+      ? `SEPARATE STAGE ${launchState.current+1} + IGNITE STAGE ${next+1}`
+      : `STAGE ${next+1} ARMED`;
+  } else {
+    btn.textContent = cur?.spent ? 'FINAL STAGE SPENT' : 'FINAL STAGE ACTIVE';
+  }
+}
+
 function updateHUD(){
   if(!launchState){
     document.getElementById('hudStage').textContent='—';
@@ -1742,8 +1902,7 @@ function updateHUD(){
   document.getElementById('hudZone').textContent=band.name;
   document.getElementById('hudScore').textContent=launchState.score||0;
 
-  const stLabel=st?`Stage ${launchState.current+1}/${launchState.stages.length}: ${st.part.screenNameX}`:`${launchState.stages.length} stages ready`;
-  document.getElementById('hudStage').textContent=stLabel;
+  document.getElementById('hudStage').textContent=stageStatusText();
 
   if(st&&st.ignited&&!st.spent){
     const twEl=document.getElementById('hudTW');
@@ -1763,6 +1922,7 @@ function updateHUD(){
   document.getElementById('speedBtn').disabled=!canCoast&&!launchState.apogeeAssist;
   if(launchState.apogeeAssist) document.getElementById('coastBtn').textContent='Coasting…';
   else document.getElementById('coastBtn').textContent='COAST TO APOGEE';
+  refreshStageButton();
 }
 
 // ── Flight physics ──
@@ -1786,16 +1946,51 @@ function checkMilestones(){
 
 function detachSpentStage(si){
   if(!launchState)return;
-  const stage=launchState.stages[si]; if(!stage)return;
-  stage.parts.forEach((part,i)=>{
+  const stage=launchState.stages[si]; if(!stage || stage.detached)return;
+  stage.detached = true;
+
+  const fins = si === 0 ? build.fins.map(getPart).filter(Boolean) : [];
+  launchState.stageDebris.push({
+    parts: stage.parts.slice(),
+    fins,
+    label: `STAGE ${si+1}`,
+    age: 0,
+    x: (Math.random()-.5)*18,
+    y: 0,
+    vx: (Math.random()-.5)*28,
+    vy: 32 + Math.random()*18,
+    rot: (Math.random()-.5)*.12,
+    spin: (Math.random()-.5)*.85
+  });
+
+  // A few small fragments make the release feel mechanical without looking like an explosion.
+  stage.parts.slice(0,3).forEach((part,i)=>{
     launchState.debris.push({
       part,age:0,
-      x:(Math.random()-.5)*80,y:i*16,
-      vx:(Math.random()-.5)*80,vy:20+Math.random()*35,
+      x:(Math.random()-.5)*64,y:i*10,
+      vx:(Math.random()-.5)*72,vy:28+Math.random()*46,
       spin:(Math.random()-.5)*3.2,rot:(Math.random()-.5)*.4
     });
   });
+
+  // Separation gas puff centered near the new active stage base.
+  for(let i=0;i<22;i++){
+    const a = Math.random()*Math.PI*2;
+    const speed = 18 + Math.random()*42;
+    launchState.sepParticles.push({
+      x: Math.cos(a)*8,
+      y: 4 + Math.sin(a)*4,
+      vx: Math.cos(a)*speed,
+      vy: Math.sin(a)*speed*.28 + 18,
+      r: 4 + Math.random()*8,
+      age: 0,
+      life: .75 + Math.random()*.45
+    });
+  }
+
   launchState.sepFlash=1;
+  launchState.sepCinematic=.95;
+  addEvent(`Stage ${si+1} separated.`,'good');
 }
 
 function flightStep(now){
@@ -1817,9 +2012,9 @@ function flightStep(now){
       addEvent(`Stage ${launchState.current+1} burnout.`);
       if(launchState.current<launchState.stages.length-1){
         document.getElementById('nextBtn').disabled=false;
-        setResult('<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage burned out — IGNITE NEXT STAGE now!</div></div>');
+        refreshStageButton();
+        setResult(`<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage ${launchState.current+1} burned out — separate and ignite Stage ${launchState.current+2} now!</div></div>`);
       } else {
-        if(!st.separated){st.separated=true;detachSpentStage(launchState.current);}
         setResult('<div class="result-icon">🌠</div><div><div class="result-cue stage-cue">Final burnout. Use COAST TO APOGEE to skip the wait.</div></div>');
       }
     }
@@ -1850,11 +2045,16 @@ function flightStep(now){
   }
   launchState.altitude=Math.max(0,launchState.altitude+launchState.velocity*dt);
   launchState.maxAltitude=Math.max(launchState.maxAltitude,launchState.altitude);
-  launchState.score=Math.round(launchState.maxAltitude/1000+m.stability*.3+launchState.milestones.size*25);
+  launchState.score=Math.round(launchState.maxAltitude/1000+m.stability*.3+launchState.milestones.size*25+(launchState.stagingBonus||0));
 
   if(launchState.shake>0) launchState.shake=Math.max(0,launchState.shake-dt*22);
+  if(launchState.sepCinematic>0) launchState.sepCinematic=Math.max(0,launchState.sepCinematic-dt*1.65);
   launchState.debris.forEach(d=>{d.age+=dt;d.x+=d.vx*dt;d.y+=d.vy*dt+22*d.age*dt;d.vy+=g*dt*.5;d.rot+=d.spin*dt;});
-  launchState.debris=launchState.debris.filter(d=>d.age<8);
+  launchState.debris=launchState.debris.filter(d=>d.age<3.4);
+  launchState.stageDebris.forEach(d=>{d.age+=dt;d.x+=d.vx*dt;d.y+=d.vy*dt+16*d.age*dt;d.vy+=g*dt*.18;d.rot+=d.spin*dt;});
+  launchState.stageDebris=launchState.stageDebris.filter(d=>d.age<6.2);
+  launchState.sepParticles.forEach(p=>{p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=g*dt*.08;});
+  launchState.sepParticles=launchState.sepParticles.filter(p=>p.age<p.life);
   checkMilestones();
 
   const screenLift=Math.min(210,Math.max(Math.sqrt(Math.max(0,launchState.altitude))*14,Math.min(130,launchState.altitude*3.5)));
@@ -1879,8 +2079,7 @@ function igniteStage(i,quality){
   st.ignited=true;st.quality=quality;launchState.current=i;
   launchState.coastTime=0;launchState.stageWindow=false;
   document.getElementById('nextBtn').disabled=true;
-  const nextLabel=i<launchState.stages.length-1?`IGNITE STAGE ${i+2}`:'FINAL STAGE';
-  document.getElementById('nextBtn').textContent=nextLabel;
+  refreshStageButton();
 }
 
 function openLaunch(){
@@ -1892,16 +2091,17 @@ function openLaunch(){
     stages,current:-1,altitude:0,velocity:0,coastTime:0,
     totalQuality:0,done:false,last:performance.now(),
     stageWindow:false,events:[],milestones:new Set(),
-    shake:0,maxAltitude:0,score:0,trail:[],debris:[],
+    shake:0,maxAltitude:0,score:0,trail:[],debris:[],stageDebris:[],sepParticles:[],
     gravity:9.81,liveTwr:0,accel:0,startTime:0,
-    coastSpeed:1,apogeeAssist:false,sepFlash:0,
+    coastSpeed:1,apogeeAssist:false,sepFlash:0,sepCinematic:0,
+    stagingFeedback:[],stagingBonus:0,
     tooHeavyWarned:false,
   };
   coastIdx=0;
   document.getElementById('commitBtn').disabled=false;
   document.getElementById('commitBtn').textContent='IGNITE STAGE 1';
   document.getElementById('nextBtn').disabled=true;
-  document.getElementById('nextBtn').textContent=stages.length>1?'IGNITE STAGE 2':'FINAL STAGE';
+  document.getElementById('nextBtn').textContent=stages.length>1?'STAGE 2 ARMED':'FINAL STAGE';
   document.getElementById('speedBtn').textContent='COAST 1×';
   setResult('<div class="result-icon">🚀</div><div><div class="result-cue">Hit <b>IGNITE STAGE 1</b> when the needle is in the <b style="color:var(--green)">green zone</b>. Stage right after burnout.</div></div>');
   updateHUD();
@@ -1929,18 +2129,29 @@ function igniteNext(){
   if(!launchState||launchState.done)return;
   const next=launchState.current+1;
   if(next>=launchState.stages.length)return;
-  let timing=1;
+  let timing=1, feedback='Clean staging', bonus=45;
   const cur=launchState.stages[launchState.current];
   if(cur&&!cur.spent){
-    timing=.45;addEvent('Early stage: fuel wasted','bad');
+    timing=.45; feedback='Early staging'; bonus=-25;
+    addEvent('Early stage: fuel wasted','bad');
     setResult('<div class="result-icon">⚠️</div><div><div class="result-cue cue-bad">Early staging — fuel wasted. Next time wait for burnout.</div></div>');
   } else if(launchState.coastTime>.9){
-    timing=Math.max(.35,1-launchState.coastTime*.22);addEvent('Late stage: speed lost','bad');
+    timing=Math.max(.35,1-launchState.coastTime*.22); feedback='Late staging'; bonus=-15;
+    addEvent('Late stage: speed lost','bad');
     setResult('<div class="result-icon">⏱️</div><div><div class="result-cue cue-bad">Late ignition — lost speed. Stage right after burnout.</div></div>');
+  } else if(launchState.coastTime>.35){
+    timing=.9; feedback='Good staging'; bonus=25;
+    addEvent('Good staging ✓','good');
+    setResult('<div class="result-icon">✅</div><div><div class="result-cue stage-cue">Good staging — the lower stage separated and the next engine lit.</div></div>');
   } else {
-    addEvent('Clean staging! ✓','good');
-    setResult('<div class="result-icon">✅</div><div><div class="result-cue stage-cue">Clean staging! That\'s the skill move.</div></div>');
+    feedback='Excellent staging'; bonus=50;
+    addEvent('Excellent staging! ✓','good');
+    setResult('<div class="result-icon">✅</div><div><div class="result-cue stage-cue">Excellent staging! Separation was clean and fast.</div></div>');
   }
+
+  launchState.stagingFeedback.push({stage:launchState.current+1,next:next+1,feedback,bonus});
+  launchState.stagingBonus += bonus;
+
   if(cur&&!cur.separated){cur.separated=true;detachSpentStage(launchState.current);}
   launchState.shake=12;
   igniteStage(next,timing);
@@ -2002,9 +2213,12 @@ function finishFlight(){
 
   const isNewBest=altitude>prevBest;
   const newBestTag=isNewBest?` <span style="color:var(--green)">★ NEW BEST!</span>`:'';
+  const stagingNote = launchState.stagingFeedback.length
+    ? ` Staging: ${launchState.stagingFeedback.map(f=>`S${f.stage}→S${f.next} ${f.feedback}`).join('; ')}. Bonus: ${launchState.stagingBonus}.`
+    : '';
 
   drawScene(250,0,false,true);
-  setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}</div></div>`);
+  setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}${stagingNote}</div></div>`);
   updateHUD();
   renderStats();
 }
