@@ -208,6 +208,12 @@ header{
 .fin-el{position:absolute;z-index:8;overflow:visible;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
 .fin-el img{width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto}
 
+/* Side-mounted SRBs sit behind the core rocket like real boosters. */
+.side-booster-el{position:absolute;z-index:7;overflow:visible;filter:drop-shadow(0 3px 4px rgba(0,0,0,.32))}
+.side-booster-el svg{display:block;width:100%;height:100%}
+.booster-strut{position:absolute;z-index:8;height:5px;pointer-events:none;border-radius:999px;
+  background:linear-gradient(180deg,#dce4e8,#626c74 55%,#262e34);
+  border:1px solid rgba(15,22,28,.75);box-shadow:0 1px 0 rgba(255,255,255,.35) inset}
 
 /* ─── STAGE SEPARATION MARKERS ─── */
 .stage-ring{
@@ -932,7 +938,7 @@ function showUnlockToast(p){
 }
 
 function typeBadge(p){
-  const map={EnginePiece:'ENGINE',FuelPiece:'FUEL TANK',SRBPiece:'BOOSTER',OrbiterPiece:'ORBITER',FinPiece:'STABILIZER',NosePiece:'NOSE CONE'};
+  const map={EnginePiece:'ENGINE',FuelPiece:'FUEL TANK',SRBPiece:'SRB PAIR',OrbiterPiece:'ORBITER',FinPiece:'STABILIZER',NosePiece:'NOSE CONE'};
   return map[p.pieceType]||p.pieceType;
 }
 
@@ -975,6 +981,8 @@ function renderParts(){
       ? `stability +${p.stability} · weight ${p.weight}kg`
       : p.pieceType==='NosePiece'
       ? `drag ${p.dragCoeff||'?'} · weight ${p.weight}kg`
+      : p.pieceType==='SRBPiece'
+      ? `side booster · thrust ${((p.thrust||0)/1000).toFixed(0)}kN · burn ${p.burnTime||0}s`
       : `mass ${p.weight||0}kg · fuel ${p.weightFuel||0}kg`;
     card.innerHTML=`
       <div class="part-icon">${partSVG(p,44,44)}</div>
@@ -1007,6 +1015,7 @@ function addPart(id){
     if(build.fins.length>=4) build.fins.shift();
     build.fins.push(id);
   } else {
+    if(isSideBoosterPart(p)) build.stack=build.stack.filter(pid=>!isSideBoosterPart(getPart(pid)));
     build.stack.push(id);
   }
   renderAll();
@@ -1030,6 +1039,11 @@ document.getElementById('dropzone').addEventListener('dragover',e=>e.preventDefa
 document.getElementById('dropzone').addEventListener('drop',e=>{e.preventDefault();addPart(e.dataTransfer.getData('text/plain'))});
 document.getElementById('stage').addEventListener('dragover',e=>e.preventDefault());
 document.getElementById('stage').addEventListener('drop',e=>{e.preventDefault();addPart(e.dataTransfer.getData('text/plain'))});
+
+function isSideBoosterPart(p){ return !!p && p.pieceType === 'SRBPiece'; }
+function mainStackIds(ids=build.stack){ return (ids||[]).filter(id=>!isSideBoosterPart(getPart(id))); }
+function sideBoosterIds(ids=build.stack){ return (ids||[]).filter(id=>isSideBoosterPart(getPart(id))); }
+function sideBoosterParts(ids=build.stack){ return sideBoosterIds(ids).map(getPart).filter(Boolean); }
 
 // ══════════════════════════════════════════════════════════════
 //  PHYSICS / METRICS
@@ -1061,7 +1075,9 @@ function gravityAtAltitude(alt){
 }
 
 function buildStages(){
-  const stack=build.stack.map((id,idx)=>({id,idx,part:getPart(id)})).filter(x=>x.part);
+  const coreIds = mainStackIds(build.stack);
+  const stack=coreIds.map((id,idx)=>({id,idx,part:getPart(id)})).filter(x=>x.part);
+  const boosters=sideBoosterIds(build.stack).map((id,idx)=>({id,idx,part:getPart(id)})).filter(x=>x.part);
   const stages=[]; let current=null;
   for(const item of stack){
     const p=item.part;
@@ -1070,7 +1086,9 @@ function buildStages(){
         part:p,index:stages.length+1,stackIndex:item.idx,parts:[p],partIds:[item.id],
         thrust:p.thrust||0,burn:Math.max(4,p.burnTime||10),remaining:Math.max(4,p.burnTime||10),
         ignited:false,spent:false,separated:false,quality:1,
-        fuelMass:p.weightFuel||0,dryMass:p.weight||0,totalMass:(p.weight||0)+(p.weightFuel||0)
+        fuelMass:p.weightFuel||0,dryMass:p.weight||0,totalMass:(p.weight||0)+(p.weightFuel||0),
+        boosters:[],boosterPartIds:[],boosterThrust:0,boosterBurn:0,boosterRemaining:0,
+        boosterIgnited:false,boosterSpent:false,boosterSeparated:false
       };
       stages.push(current);
     } else if(current){
@@ -1087,17 +1105,38 @@ function buildStages(){
     stage.burn=Math.max(4,Math.min(45,(stage.part.burnTime||10)+extraFuel/900));
     stage.remaining=stage.burn;
   });
+
+  // SRBs are not inline stages. They mount to both sides, ignite with Stage 1,
+  // burn on their own timer, and drop away as a side-booster pair.
+  if(stages[0] && boosters.length){
+    stages[0].boosters=boosters.map(b=>b.part);
+    stages[0].boosterPartIds=boosters.map(b=>b.id);
+    stages[0].boosterThrust=boosters.reduce((sum,b)=>sum+(b.part.thrust||0),0);
+    stages[0].boosterBurn=Math.max(4,...boosters.map(b=>b.part.burnTime||10));
+    stages[0].boosterRemaining=stages[0].boosterBurn;
+  }
   return stages;
 }
 
 function stageDryMass(s){ return s?s.parts.reduce((sum,p)=>sum+(p.weight||0),0):0; }
 function stageFuelMass(s){ return s?s.parts.reduce((sum,p)=>sum+(p.weightFuel||0),0):0; }
+function boosterDryMass(s){ return s?.boosters?.length?s.boosters.reduce((sum,p)=>sum+(p.weight||0),0):0; }
+function boosterFuelMass(s){ return s?.boosters?.length?s.boosters.reduce((sum,p)=>sum+(p.weightFuel||0),0):0; }
+function boosterFuelRatio(s){
+  if(!s||!s.boosters?.length) return 1;
+  if(!s.boosterIgnited) return 1;
+  if(s.boosterSpent || s.boosterSeparated) return 0;
+  return Math.max(0, s.boosterRemaining / Math.max(.001, s.boosterBurn));
+}
 
 // Returns 0..1: how full a fuel-bearing part's tank is right now (for visual shrink)
 function fuelRatioForPart(partId){
   if(!launchState) return 1;
   // Find which stage this part belongs to
   for(const s of launchState.stages){
+    if(s.boosterPartIds && s.boosterPartIds.includes(partId)){
+      return boosterFuelRatio(s);
+    }
     if(s.partIds && s.partIds.includes(partId)){
       if(!s.ignited) return 1;            // not yet burning — full
       if(s.spent) return 0;               // burned out — empty
@@ -1118,6 +1157,14 @@ function stackMassForFlight(){
     const remainingFuel=Math.max(0,totalFuel-burnFrac*totalFuel);
     burnedFuel+=burnFrac*totalFuel;
     if(s.separated) droppedMass+=stageDryMass(s)+remainingFuel;
+
+    const bFuel=boosterFuelMass(s);
+    if(bFuel>0){
+      const bFrac=s.boosterIgnited?Math.max(0,Math.min(1,(s.boosterBurn-s.boosterRemaining)/Math.max(.001,s.boosterBurn))):0;
+      const bRemaining=Math.max(0,bFuel-bFrac*bFuel);
+      burnedFuel+=bFrac*bFuel;
+      if(s.boosterSeparated) droppedMass+=boosterDryMass(s)+bRemaining;
+    }
   });
   const total=Math.max(90,base-burnedFuel-droppedMass);
   return {total,base,burnedFuel,droppedMass,massLost:Math.max(0,base-total)};
@@ -1125,7 +1172,7 @@ function stackMassForFlight(){
 
 function stackFuelForFlight(){
   const totalFuel = launchState
-    ? launchState.stages.reduce((sum,s)=>sum+stageFuelMass(s),0)
+    ? launchState.stages.reduce((sum,s)=>sum+stageFuelMass(s)+boosterFuelMass(s),0)
     : metrics().fuel;
   if(!launchState) return {total:totalFuel,remaining:totalFuel,burned:0,dropped:0,pct:totalFuel?1:0};
   let remaining=0,burned=0,dropped=0;
@@ -1136,17 +1183,38 @@ function stackFuelForFlight(){
     burned+=burnFrac*total;
     if(s.separated) dropped+=left;
     else remaining+=left;
+
+    const bTotal=boosterFuelMass(s);
+    if(bTotal>0){
+      const bFrac=s.boosterIgnited?Math.max(0,Math.min(1,(s.boosterBurn-s.boosterRemaining)/Math.max(.001,s.boosterBurn))):0;
+      const bLeft=Math.max(0,bTotal-bFrac*bTotal);
+      burned+=bFrac*bTotal;
+      if(s.boosterSeparated) dropped+=bLeft;
+      else remaining+=bLeft;
+    }
   });
   return {total:totalFuel,remaining,burned,dropped,pct:totalFuel?remaining/totalFuel:0};
 }
 
 function liveRocketParts(){
-  if(!launchState) return [...build.stack].map(getPart).filter(Boolean);
+  const coreIds=mainStackIds(build.stack);
+  if(!launchState) return coreIds.map(getPart).filter(Boolean);
   const stage=launchState.stages[Math.max(0,launchState.current)]||launchState.stages[0];
   const startIndex=stage?stage.stackIndex:0;
-  const ids=build.stack.slice(startIndex);
+  const ids=coreIds.slice(startIndex);
   if(build.nose) ids.push(build.nose);
   return ids.map(getPart).filter(Boolean);
+}
+
+function liveSideBoosters(){
+  if(!launchState) return sideBoosterParts(build.stack);
+  const first=launchState.stages[0];
+  if(!first || first.boosterSeparated) return [];
+  return first.boosters || [];
+}
+function sideBoostersBurning(){
+  const first=launchState?.stages?.[0];
+  return !!(first && first.boosterIgnited && !first.boosterSpent && !first.boosterSeparated);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1386,16 +1454,62 @@ function centeredFinPlacement(anchor, fw, fh, isLeft, pair=0){
   return {x, bottom, top, overlap};
 }
 
+function sideBoosterLayout(layout, scale=1){
+  const coreH = Math.max(84*scale, layout.totalHeight || 120*scale);
+  const w = Math.round(34*scale);
+  const h = Math.round(Math.max(82*scale, Math.min(coreH*.78, 152*scale)));
+  const bodySeg = layout.segments.find(s=>['FuelPiece','OrbiterPiece'].includes(s.p.pieceType))
+    || layout.segments.find(s=>s.p.pieceType==='EnginePiece')
+    || layout.segments[0];
+  const anchorW = Math.max(bodySeg?.w || ROCKET_BODY_W*scale, 58*scale);
+  const bottom = Math.max(0, Math.min(8*scale, Math.max(0, coreH-h-4*scale)));
+  const gap = Math.max(4*scale, anchorW*.035);
+  return {w,h,bottom,anchorW,gap,
+    leftX:-(anchorW/2 + w/2 + gap),
+    rightX:(anchorW/2 + w/2 + gap),
+    strutTop:bottom + h*.64,
+    strutLow:bottom + h*.28
+  };
+}
+
+function renderSideBoostersDOM(mount, layout, boosters){
+  if(!boosters?.length || !layout?.segments?.length) return;
+  const p=boosters[0];
+  const b=sideBoosterLayout(layout, 1);
+  const mountW=260;
+  const sides=[{x:b.leftX, mirror:false},{x:b.rightX, mirror:true}];
+  sides.forEach(side=>{
+    const d=document.createElement('div');
+    d.className='side-booster-el';
+    d.style.cssText=`width:${b.w}px;height:${b.h}px;bottom:${b.bottom}px;left:${mountW/2 + side.x - b.w/2}px;`
+      +(side.mirror?'transform:scaleX(-1);transform-origin:center center;':'');
+    d.innerHTML=partSVG(p,b.w,b.h);
+    mount.appendChild(d);
+  });
+  [b.strutTop,b.strutLow].forEach(y=>{
+    const left=document.createElement('div');
+    left.className='booster-strut';
+    left.style.cssText=`width:${Math.abs(b.leftX)+4}px;bottom:${y}px;left:${mountW/2 + b.leftX}px;`;
+    mount.appendChild(left);
+    const right=document.createElement('div');
+    right.className='booster-strut';
+    right.style.cssText=`width:${Math.abs(b.rightX)+4}px;bottom:${y}px;left:${mountW/2}px;`;
+    mount.appendChild(right);
+  });
+}
+
 function renderRocket(){
   const mount = document.getElementById('rocket');
   mount.innerHTML = '';
 
   const segs = [];
-  [...build.stack].forEach(id => { const p=getPart(id); if(p) segs.push(p); });
+  mainStackIds(build.stack).forEach(id => { const p=getPart(id); if(p) segs.push(p); });
   if(build.nose) { const p=getPart(build.nose); if(p) segs.push(p); }
 
   const COWL_H = 28;
   const layout = buildVisualLayout(segs, spriteDims, COWL_H, 4);
+
+  renderSideBoostersDOM(mount, layout, sideBoosterParts(build.stack));
 
   layout.segments.forEach(({p, y, h, w, shroudedEngine}) => {
     const d = document.createElement('div');
@@ -1490,7 +1604,7 @@ function stackSlotLabel(p){
   if(!p) return 'BODY';
   if(p.pieceType==='EnginePiece') return 'ENGINE';
   if(p.pieceType==='FuelPiece') return 'FUEL';
-  if(p.pieceType==='SRBPiece') return 'BOOSTER';
+  if(p.pieceType==='SRBPiece') return 'BOOSTER PAIR';
   if(p.pieceType==='OrbiterPiece') return 'ORBITER';
   return 'BODY';
 }
@@ -1502,6 +1616,7 @@ function insertPartAt(id, stackIndex=build.stack.length){
     if(build.fins.length>=4) build.fins.shift();
     build.fins.push(id);
   } else {
+    if(isSideBoosterPart(p)) build.stack=build.stack.filter(pid=>!isSideBoosterPart(getPart(pid)));
     const idx=Math.max(0,Math.min(build.stack.length,Number(stackIndex)||0));
     build.stack.splice(idx,0,id);
   }
@@ -1937,9 +2052,42 @@ function stageAssemblyHeight(parts){
   return buildVisualLayout(parts, canvasPieceDims, 20, 3).totalHeight;
 }
 
-function drawRocketAssembly(parts, fins=[], burning=false, showFins=true, showSeams=true, stageOffset=0){
+function drawSideBoostersCanvas(layout, boosters=[], boostersBurning=false){
+  if(!boosters?.length || !layout?.segments?.length) return;
+  const p=boosters[0];
+  const b=sideBoosterLayout(layout, CANVAS_ROCKET_W / ROCKET_BODY_W);
+  ctx.save();
+  ctx.strokeStyle='rgba(24,32,38,.85)';
+  ctx.lineWidth=4;
+  [b.strutTop,b.strutLow].forEach(y=>{
+    ctx.beginPath();ctx.moveTo(-b.anchorW/2,-y);ctx.lineTo(b.leftX + b.w/2,-y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(b.anchorW/2,-y);ctx.lineTo(b.rightX - b.w/2,-y);ctx.stroke();
+  });
+  const ratio = fuelRatioForPart(p.name);
+  [[b.leftX,false],[b.rightX,true]].forEach(([x,mirror])=>{
+    drawSpriteOrVector(p, x, -b.bottom, b.w, b.h, mirror, ratio);
+    if(boostersBurning){
+      const flameX=x;
+      const flicker=Math.random()*12;
+      const fg=ctx.createLinearGradient(flameX, 5-b.bottom, flameX, 58+flicker-b.bottom);
+      fg.addColorStop(0,'rgba(255,245,170,.95)');
+      fg.addColorStop(.35,'rgba(255,150,25,.85)');
+      fg.addColorStop(1,'rgba(255,60,0,0)');
+      ctx.fillStyle=fg;
+      ctx.beginPath();
+      ctx.moveTo(flameX-b.w*.22, 2-b.bottom);
+      ctx.quadraticCurveTo(flameX, 55+flicker-b.bottom, flameX+b.w*.22, 2-b.bottom);
+      ctx.closePath();ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+
+function drawRocketAssembly(parts, fins=[], burning=false, showFins=true, showSeams=true, stageOffset=0, boosters=[], boostersBurning=false){
   const COWL_H = 20;
   const layout = buildVisualLayout(parts, canvasPieceDims, COWL_H, 3);
+
+  drawSideBoostersCanvas(layout, boosters, boostersBurning);
 
   // Draw fins first so the rocket body/cowling masks the attachment edge.
   const anchor = lowestFinAnchor(layout);
@@ -1997,7 +2145,11 @@ function drawCanvasRocket(burning){
   // fin-bearing lower stage has separated during later stages.
   const showFins = !launchState || (launchState.current ?? -1) <= 0;
   const fins = build.fins.map(getPart).filter(Boolean);
-  drawRocketAssembly(parts, fins, burning, showFins, true, launchState ? Math.max(0, launchState.current) : 0);
+  drawRocketAssembly(
+    parts, fins, burning, showFins, true,
+    launchState ? Math.max(0, launchState.current) : 0,
+    liveSideBoosters(), sideBoostersBurning()
+  );
 }
 
 function drawCloud(x,y,s,a){
@@ -2075,7 +2227,12 @@ function drawDebris(rocketY=250){
       ctx.rotate(d.rot);
       const shrink = Math.max(.52, 1 - d.age * .035);
       ctx.scale(shrink, shrink);
-      drawRocketAssembly(d.parts, d.fins || [], false, !!(d.fins?.length), false);
+      if(d.asBoosters){
+        const fakeLayout={segments:[{p:d.parts[0],w:CANVAS_ROCKET_W,y:0,h:h}],totalHeight:Math.max(h,110)};
+        drawSideBoostersCanvas(fakeLayout, d.parts, false);
+      } else {
+        drawRocketAssembly(d.parts, d.fins || [], false, !!(d.fins?.length), false);
+      }
       drawCanvasSeparatorBand(0, -h, 74, d.label || 'SEPARATED', .85);
       ctx.restore();
     });
@@ -2334,9 +2491,45 @@ function checkMilestones(){
   }
 }
 
+function detachSideBoosters(stage, label='SRB BOOSTERS', burnedOut=false){
+  if(!launchState || !stage || !stage.boosters?.length || stage.boosterSeparated) return;
+  stage.boosterSeparated=true;
+  if(burnedOut || stage.boosterRemaining<=0){
+    stage.boosterSpent=true;
+    stage.boosterRemaining=0;
+  }
+  launchState.stageDebris.push({
+    parts:stage.boosters,
+    fins:[],
+    asBoosters:true,
+    label,
+    age:0,
+    x:(Math.random()-.5)*46,
+    y:0,
+    vx:(Math.random()-.5)*44,
+    vy:50+Math.random()*38,
+    rot:(Math.random()-.5)*.16,
+    spin:(Math.random()-.5)*.5
+  });
+  for(let i=0;i<18;i++){
+    const side=i%2===0?-1:1;
+    launchState.sepParticles.push({
+      x: side*(38+Math.random()*8),
+      y: 8 + (Math.random()-.5)*10,
+      vx: side*(24+Math.random()*42),
+      vy: 12 + Math.random()*36,
+      r: 3 + Math.random()*7,
+      age: 0,
+      life: .65 + Math.random()*.4
+    });
+  }
+  addEvent(`${label} separated.`,'good');
+}
+
 function detachSpentStage(si){
   if(!launchState)return;
   const stage=launchState.stages[si]; if(!stage || stage.detached)return;
+  if(stage.boosters?.length && !stage.boosterSeparated) detachSideBoosters(stage, 'SRB BOOSTERS', stage.boosterRemaining<=0);
   stage.detached = true;
 
   const fins = si === 0 ? build.fins.map(getPart).filter(Boolean) : [];
@@ -2396,6 +2589,16 @@ function flightStep(now){
   if(st&&st.ignited&&!st.spent){
     burning=true; st.remaining-=dt;
     thrustNow=st.thrust*st.quality*PHYSICS.thrustScale;
+    if(st.boosterIgnited && !st.boosterSpent && !st.boosterSeparated){
+      st.boosterRemaining-=dt;
+      thrustNow+=(st.boosterThrust||0)*st.quality*PHYSICS.thrustScale;
+      if(st.boosterRemaining<=0){
+        st.boosterRemaining=0;
+        detachSideBoosters(st,'SRB BOOSTERS', true);
+        launchState.shake=Math.max(launchState.shake,10);
+        setResult('<div class="result-icon">🚀</div><div><div class="result-cue stage-cue">SRBs burned out and separated. The core stage keeps flying.</div></div>');
+      }
+    }
     if(st.remaining<=0){
       st.remaining=0;st.spent=true;burning=false;
       launchState.stageWindow=true;launchState.coastTime=0;launchState.shake=8;
@@ -2467,6 +2670,13 @@ function flightStep(now){
 function igniteStage(i,quality){
   const st=launchState.stages[i]; if(!st)return;
   st.ignited=true;st.quality=quality;launchState.current=i;
+  if(i===0 && st.boosters?.length){
+    st.boosterIgnited=true;
+    st.boosterRemaining=st.boosterBurn;
+    st.boosterSpent=false;
+    st.boosterSeparated=false;
+    addEvent('SRBs lit with Stage 1.','good');
+  }
   launchState.coastTime=0;launchState.stageWindow=false;
   document.getElementById('nextBtn').disabled=true;
   refreshStageButton();
