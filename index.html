@@ -45,6 +45,19 @@ header{
 .header-right{display:flex;align-items:center;gap:10px}
 .best-badge{font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(245,196,0,.1);border:1px solid rgba(245,196,0,.3);padding:5px 10px;border-radius:6px;white-space:nowrap}
 
+.mode-buttons{display:grid;grid-template-columns:1fr;gap:6px}
+.mode-btn{
+  font-family:var(--font-hud);font-size:10px;font-weight:800;letter-spacing:.08em;
+  padding:8px 8px;border-radius:7px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--muted);cursor:pointer;text-align:left;
+  transition:border-color .12s,background .12s,color .12s,transform .1s;
+}
+.mode-btn:hover{color:var(--text);border-color:var(--accent);transform:translateX(2px)}
+.mode-btn.active{background:rgba(245,196,0,.16);color:var(--accent);border-color:var(--accent);box-shadow:0 0 12px rgba(245,196,0,.18)}
+.mode-btn small{display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:0;color:var(--muted);font-weight:400;margin-top:2px}
+.mode-desc{font-family:var(--font-mono);font-size:10px;color:var(--muted);line-height:1.45;margin-top:9px;border-top:1px solid var(--border);padding-top:9px}
+.mode-pill{display:inline-block;font-family:var(--font-hud);font-size:9px;letter-spacing:.08em;color:#0a0800;background:var(--accent);border-radius:999px;padding:2px 7px;margin-right:5px}
+
 /* ─── LAYOUT ─── */
 .app{display:grid;grid-template-columns:280px 1fr 300px;gap:12px;padding:12px;max-width:1460px;margin:auto;min-height:calc(100vh - 60px)}
 .col{display:flex;flex-direction:column;gap:12px}
@@ -406,6 +419,17 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 <div class="app">
   <!-- LEFT: Part Library -->
   <div class="col">
+    <div class="panel mode-panel">
+      <div class="panel-header">GAME MODE</div>
+      <div class="panel-body">
+        <div class="mode-buttons" id="modeButtons">
+          <button class="mode-btn" data-mode="easy">EASY MODE<small>starter parts · wider timing window</small></button>
+          <button class="mode-btn" data-mode="career">CAREER MODE<small>altitude progression · part unlocks</small></button>
+          <button class="mode-btn" data-mode="sandbox">FULLY UNLOCKED<small>all parts · no career unlock impact</small></button>
+        </div>
+        <div class="mode-desc" id="modeDesc"></div>
+      </div>
+    </div>
     <div class="panel" style="flex:1">
       <div class="panel-header">
         <span>PART LIBRARY</span>
@@ -780,8 +804,32 @@ function artFor(p){ return PART_ART[p.name] || 'assets/img_1678_lossless.png'; }
 // ══════════════════════════════════════════════════════════════
 let activeTab = 'THRUST';
 let build = {stack:[], fins:[], nose:null};
-let best = Number(localStorage.getItem('slBest')||0);
-let unlockedBest = Number(localStorage.getItem('slUnlockedBest')||best); // tracks what was unlocked at
+
+const EASY_PARTS = new Set(['Engine_1','Engine_2','Engine_6','Fin_1','Fin_2','Fin_3','Nose_6','Nose_10']);
+const MODES = {
+  easy:{
+    key:'easy', label:'EASY MODE', bestLabel:'EASY BEST',
+    desc:'Starter classroom kit, wider ignition green zone, slower needle, and more forgiving staging. Best flights are tracked here but do not unlock career parts.',
+    sweetWidth:30, needleSpeed:1.2, minIgnitionQuality:.58, stageGood:.8, stageLate:1.8
+  },
+  career:{
+    key:'career', label:'CAREER MODE', bestLabel:'CAREER BEST',
+    desc:'The main progression path. Altitude records unlock new parts, rank progress, and milestones.',
+    sweetWidth:16, needleSpeed:2.1, minIgnitionQuality:.35, stageGood:.35, stageLate:.9
+  },
+  sandbox:{
+    key:'sandbox', label:'FULLY UNLOCKED', bestLabel:'SANDBOX BEST',
+    desc:'Every part is available for experimentation. Great for testing wild designs without changing career unlock progress.',
+    sweetWidth:16, needleSpeed:2.1, minIgnitionQuality:.35, stageGood:.35, stageLate:.9
+  }
+};
+let gameMode = localStorage.getItem('slMode') || 'career';
+if(!MODES[gameMode]) gameMode='career';
+let modeBests = {};
+try{ modeBests = JSON.parse(localStorage.getItem('slModeBests')||'{}') || {}; }catch(e){ modeBests = {}; }
+let careerBest = Number(localStorage.getItem('slBest')||0);
+let best = gameMode==='career' ? careerBest : Number(modeBests[gameMode]||0);
+let unlockedBest = Number(localStorage.getItem('slUnlockedBest')||careerBest); // tracks what was unlocked in career
 
 const MILESTONES = [
   {alt:1000,      label:'1 km',       icon:'🌄'},
@@ -797,8 +845,69 @@ let reachedMilestones = JSON.parse(localStorage.getItem('slMilestones')||'[]');
 // ══════════════════════════════════════════════════════════════
 //  UNLOCK SYSTEM
 // ══════════════════════════════════════════════════════════════
-function isUnlocked(p){ return (p.earnedAt||0) <= best; }
+function modeConfig(){ return MODES[gameMode] || MODES.career; }
+function currentModeBest(){ return gameMode==='career' ? careerBest : Number(modeBests[gameMode]||0); }
+function saveCurrentModeBest(value){
+  if(gameMode==='career'){
+    careerBest=value;
+    localStorage.setItem('slBest',value);
+  } else {
+    modeBests[gameMode]=value;
+    localStorage.setItem('slModeBests',JSON.stringify(modeBests));
+  }
+}
+function modeStorageKey(base){ return gameMode==='career' ? base : `${base}_${gameMode}`; }
+function isUnlocked(p){
+  if(!p) return false;
+  if(gameMode==='sandbox') return true;
+  if(gameMode==='easy') return EASY_PARTS.has(p.name);
+  return (p.earnedAt||0) <= best;
+}
+function isVisibleInLibrary(p){ return gameMode!=='easy' || EASY_PARTS.has(p.name); }
+function unlockedCountLabel(){
+  if(gameMode==='sandbox') return `${ALL_PARTS.length}/${ALL_PARTS.length} parts`;
+  if(gameMode==='easy') return `${EASY_PARTS.size} starter parts`;
+  const unlockedCount=ALL_PARTS.filter(p=>isUnlocked(p)).length;
+  return `${unlockedCount}/${ALL_PARTS.length} parts`;
+}
 function getPart(id){ return ALL_PARTS.find(p=>p.name===id); }
+function sanitizeBuildForMode(){
+  const ok=id=>{ const p=getPart(id); return !!p && isUnlocked(p); };
+  build.stack=(build.stack||[]).filter(ok);
+  build.fins=(build.fins||[]).filter(ok).slice(0,4);
+  if(build.nose && !ok(build.nose)) build.nose=null;
+}
+function updateModeAssistVisuals(){
+  const cfg=modeConfig();
+  const sweet=document.querySelector('.sweet-zone');
+  if(sweet){
+    sweet.style.left=(50-cfg.sweetWidth/2)+'%';
+    sweet.style.width=cfg.sweetWidth+'%';
+  }
+  document.body.classList.toggle('mode-easy',gameMode==='easy');
+  document.body.classList.toggle('mode-career',gameMode==='career');
+  document.body.classList.toggle('mode-sandbox',gameMode==='sandbox');
+}
+function updateModeUI(){
+  document.querySelectorAll('.mode-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===gameMode));
+  const desc=document.getElementById('modeDesc');
+  if(desc) desc.innerHTML=`<span class="mode-pill">${modeConfig().label}</span>${modeConfig().desc}`;
+  updateModeAssistVisuals();
+}
+function setGameMode(mode){
+  if(!MODES[mode]) return;
+  gameMode=mode;
+  localStorage.setItem('slMode',gameMode);
+  best=currentModeBest();
+  sanitizeBuildForMode();
+  updateModeUI();
+  renderParts();
+  renderAll();
+}
+function initModeUI(){
+  document.querySelectorAll('.mode-btn').forEach(btn=>btn.onclick=()=>setGameMode(btn.dataset.mode));
+  updateModeUI();
+}
 
 function checkNewUnlocks(prevBest, newBest){
   const newly = ALL_PARTS.filter(p=>(p.earnedAt||0)>prevBest && (p.earnedAt||0)<=newBest);
@@ -847,6 +956,7 @@ function renderParts(){
   el.innerHTML='';
   const list=ALL_PARTS
     .filter(p=>p.cardType===activeTab)
+    .filter(isVisibleInLibrary)
     .sort((a,b)=>(a.earnedAt||0)-(b.earnedAt||0));
 
   const unlocked=list.filter(p=>isUnlocked(p));
@@ -884,8 +994,7 @@ function renderParts(){
     el.appendChild(card);
   });
 
-  const unlockedCount=ALL_PARTS.filter(p=>isUnlocked(p)).length;
-  document.getElementById('unlockedCount').textContent=`${unlockedCount}/${ALL_PARTS.length} parts`;
+  document.getElementById('unlockedCount').textContent=unlockedCountLabel();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -906,9 +1015,13 @@ function addPart(id){
 function clearBuild(){ build={stack:[],fins:[],nose:null}; renderAll(); }
 
 function buildSample(){
-  // Minimal Era 1 demo: one modest engine + nose + two fins.
-  // It teaches ignition and stability without launching absurdly high.
-  build={nose:'Nose_6', stack:['Engine_2'], fins:['Fin_1','Fin_1']};
+  // Mode-aware samples: simple in Easy/Career, exploratory in Fully Unlocked.
+  if(gameMode==='sandbox'){
+    build={nose:'Nose_7', stack:['Engine_1','Engine_6','Engine_7'], fins:['Fin_2','Fin_2']};
+  } else {
+    build={nose:'Nose_6', stack:['Engine_2'], fins:['Fin_1','Fin_1']};
+  }
+  sanitizeBuildForMode();
   renderAll();
 }
 
@@ -1504,8 +1617,8 @@ function removeAt(slot,i){
 function renderMilestones(){
   const grid=document.getElementById('milestoneGrid');
   grid.innerHTML=MILESTONES.map(m=>{
-    const reached=reachedMilestones.includes(m.alt)||best>=m.alt;
-    if(reached&&!reachedMilestones.includes(m.alt)) reachedMilestones.push(m.alt);
+    const reached = gameMode==='career' ? (reachedMilestones.includes(m.alt)||best>=m.alt) : best>=m.alt;
+    if(gameMode==='career' && reached && !reachedMilestones.includes(m.alt)) reachedMilestones.push(m.alt);
     return `<div class="ms-chip${reached?' reached':''}">
       <div class="ms-dot"></div>
       <span>${m.icon} ${m.label}</span>
@@ -1519,7 +1632,7 @@ function renderMilestones(){
   document.getElementById('progressFill').style.width=pct+'%';
   document.getElementById('progressPct').textContent=Math.round(pct)+'%';
 
-  document.getElementById('bestBadge').textContent='BEST: '+formatDistance(best);
+  document.getElementById('bestBadge').textContent=`${modeConfig().bestLabel}: ${formatDistance(best)}`;
 }
 
 function renderAll(){
@@ -2096,12 +2209,19 @@ function drawScene(rocketY,tilt,burning,finished=false){
 
 // ── Needle mix animation ──
 function tickNeedle(){
-  needleX+=needleDir*2.1;
+  needleX+=needleDir*modeConfig().needleSpeed;
   if(needleX>100||needleX<0) needleDir*=-1;
   document.getElementById('needle').style.left=needleX+'%';
   mixAnim=requestAnimationFrame(tickNeedle);
 }
-function ignitionQuality(){ return Math.max(.35,1-Math.abs(needleX-50)/50); }
+function ignitionQuality(){
+  const cfg=modeConfig();
+  const half=cfg.sweetWidth/2;
+  const miss=Math.abs(needleX-50);
+  if(miss<=half) return 1;
+  const scaled=1-(miss-half)/(50-half);
+  return Math.max(cfg.minIgnitionQuality,scaled);
+}
 
 // ── HUD update ──
 function addEvent(text,type='cue'){
@@ -2375,7 +2495,13 @@ function openLaunch(){
   document.getElementById('nextBtn').disabled=true;
   document.getElementById('nextBtn').textContent=stages.length>1?'STAGE 2 ARMED':'FINAL STAGE';
   document.getElementById('speedBtn').textContent='COAST 1×';
-  setResult('<div class="result-icon">🚀</div><div><div class="result-cue">Hit <b>IGNITE STAGE 1</b> when the needle is in the <b style="color:var(--green)">green zone</b>. Watch <b>LIVE MASS</b> drop as fuel burns, then stage right after burnout.</div></div>');
+  const modeNote = gameMode==='easy'
+    ? 'Easy Mode gives you a wider green zone and more forgiving staging.'
+    : gameMode==='sandbox'
+    ? 'Fully Unlocked mode will not change Career unlock progress.'
+    : 'Career Mode altitude records unlock new parts.';
+  setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>${modeConfig().label}</b>: Hit <b>IGNITE STAGE 1</b> in the <b style="color:var(--green)">green zone</b>. Watch <b>LIVE MASS</b> drop as fuel burns. ${modeNote}</div></div>`);
+  updateModeAssistVisuals();
   updateHUD();
   drawScene(400,0,false);
   tickNeedle();
@@ -2407,11 +2533,11 @@ function igniteNext(){
     timing=.45; feedback='Early staging'; bonus=-25;
     addEvent('Early stage: fuel wasted','bad');
     setResult('<div class="result-icon">⚠️</div><div><div class="result-cue cue-bad">Early staging — fuel wasted. Next time wait for burnout.</div></div>');
-  } else if(launchState.coastTime>.9){
+  } else if(launchState.coastTime>modeConfig().stageLate){
     timing=Math.max(.35,1-launchState.coastTime*.22); feedback='Late staging'; bonus=-15;
     addEvent('Late stage: speed lost','bad');
     setResult('<div class="result-icon">⏱️</div><div><div class="result-cue cue-bad">Late ignition — lost speed. Stage right after burnout.</div></div>');
-  } else if(launchState.coastTime>.35){
+  } else if(launchState.coastTime>modeConfig().stageGood){
     timing=.9; feedback='Good staging'; bonus=25;
     addEvent('Good staging ✓','good');
     setResult('<div class="result-icon">✅</div><div><div class="result-cue stage-cue">Good staging — the lower stage separated and the next engine lit.</div></div>');
@@ -2461,14 +2587,16 @@ function finishFlight(){
   const altitude=launchState.maxAltitude;
   const prevBest=best;
 
-  // Check new unlocks
+  // Save the best for the active mode. Only Career progress unlocks parts.
   if(altitude>best){
     best=altitude;
-    localStorage.setItem('slBest',best);
-    const newly=checkNewUnlocks(prevBest,best);
-    // Save milestones
-    MILESTONES.forEach(ms=>{if(best>=ms.alt&&!reachedMilestones.includes(ms.alt))reachedMilestones.push(ms.alt);});
-    localStorage.setItem('slMilestones',JSON.stringify(reachedMilestones));
+    saveCurrentModeBest(best);
+    if(gameMode==='career'){
+      checkNewUnlocks(prevBest,best);
+      // Save career milestones
+      MILESTONES.forEach(ms=>{if(best>=ms.alt&&!reachedMilestones.includes(ms.alt))reachedMilestones.push(ms.alt);});
+      localStorage.setItem('slMilestones',JSON.stringify(reachedMilestones));
+    }
     renderMilestones();
   }
 
@@ -2502,8 +2630,8 @@ document.getElementById('launchBtn').onclick=openLaunch;
 document.getElementById('launchBtn2').onclick=openLaunch;
 document.getElementById('clearBtn').onclick=clearBuild;
 document.getElementById('sampleBtn').onclick=buildSample;
-document.getElementById('saveBtn').onclick=()=>{localStorage.setItem('slBuild',JSON.stringify(build));alert('Rocket saved!');};
-document.getElementById('loadBtn').onclick=()=>{try{const b=JSON.parse(localStorage.getItem('slBuild'));if(b){build=b;renderAll();}}catch(e){alert('No saved rocket found.');}};
+document.getElementById('saveBtn').onclick=()=>{localStorage.setItem(modeStorageKey('slBuild'),JSON.stringify(build));alert(`${modeConfig().label} rocket saved!`);};
+document.getElementById('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(modeStorageKey('slBuild')) || (gameMode==='career'?null:localStorage.getItem('slBuild'));const b=JSON.parse(raw);if(b){build=b;sanitizeBuildForMode();renderAll();}else alert('No saved rocket found for this mode.');}catch(e){alert('No saved rocket found for this mode.');}};
 document.getElementById('commitBtn').onclick=igniteFirst;
 document.getElementById('nextBtn').onclick=igniteNext;
 document.getElementById('coastBtn').onclick=coastToApogee;
@@ -2516,6 +2644,7 @@ document.getElementById('closeBtn').onclick=()=>{
 // ══════════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════════
+initModeUI();
 initTabs();
 renderParts();
 renderMilestones();
