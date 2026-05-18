@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Rocket School UDL 3.0</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
 
 :root{
   --sky:#0a1628;
@@ -22,13 +22,13 @@
   --red:#ff3f5a;
   --blue:#42b4ff;
   --glow:rgba(245,196,0,.18);
-  --font-hud:'Orbitron',monospace;
-  --font-mono:'Share Tech Mono',monospace;
-  --font-ui:'Barlow Condensed',sans-serif;
+  --font-hud:'Atkinson Hyperlegible','Trebuchet MS',Arial,sans-serif;
+  --font-mono:'Atkinson Hyperlegible','Trebuchet MS',Arial,sans-serif;
+  --font-ui:'Atkinson Hyperlegible','Trebuchet MS',Arial,sans-serif;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--sky);color:var(--text);font-family:var(--font-ui);overflow-x:hidden}
+html,body{height:100%;background:var(--sky);color:var(--text);font-family:var(--font-ui);line-height:1.35;overflow-x:hidden}
 
 /* ─── HEADER ─── */
 header{
@@ -576,6 +576,16 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 .udl-kid .school-words{font-size:14px;border-radius:10px;padding:10px;color:#fff0a8}
 .udl-kid .launch-modal{border-radius:20px}.udl-kid .hud-strip{grid-template-columns:repeat(4,1fr)}
 .udl-kid .hud-cell{padding:9px}.udl-kid .hud-key{font-size:10px}.udl-kid .hud-val{font-size:15px}
+
+/* Student launch view: no cockpit numbers while the rocket is flying. */
+.udl-kid .hud-strip,
+.udl-kid .burn-track{display:none!important}
+.udl-kid .launch-modal{font-family:var(--font-ui);border-radius:24px}
+.udl-kid .result-bar{padding:18px 20px;background:#08283f;border-top:4px solid var(--accent);gap:14px}
+.udl-kid .result-bar .big{font-family:var(--font-ui);font-size:34px;letter-spacing:0;text-transform:none;color:#fff;line-height:1.12}
+.udl-kid .result-bar .note{font-size:21px;line-height:1.4;color:#eaf8ff;margin-top:6px}
+.udl-kid .result-cue{font-size:21px;line-height:1.4;color:#f4fbff}
+.udl-kid .result-icon{font-size:38px}
 .udl-kid .launch-controls{grid-template-columns:1fr 1fr;gap:10px}.udl-kid .mix-label{font-size:13px}
 .udl-kid .mix-zone,.udl-kid #nextBtn,.udl-kid #speedBtn,.udl-kid #coastBtn{display:none!important}
 .udl-kid #commitBtn{font-size:20px;min-height:64px}.udl-kid #closeBtn{font-size:16px;min-height:64px}
@@ -1258,8 +1268,8 @@ const ROCKET_SCHOOL_LESSONS = [
     check:(alt,state)=>alt>=100 && build.fins.length>=2, success:'Good. The fins helped the rocket stay stable. Next, you will see that fuel has weight.'
   },
   {
-    title:'Fuel Has Weight', level:'Level 3', goal:'Goal: add fuel and watch LIVE MASS drop.',
-    instruction:'Fuel helps the rocket push longer, but fuel also makes it heavier. Watch LIVE MASS during launch.',
+    title:'Fuel Has Weight', level:'Level 3', goal:'Goal: add fuel and see if the rocket goes higher.',
+    instruction:'Fuel helps the rocket push longer, but fuel also makes it heavier. Launch it and notice what changes.',
     words:'Rocket word: mass means how much stuff the rocket has.', primary:'LOAD FUEL ROCKET',
     parts:['Engine_2','Nose_6','Fin_1','Fin_2','Fuel_1'], build:{nose:'Nose_6',stack:['Engine_2','Fuel_1'],fins:['Fin_1','Fin_1']},
     check:(alt,state)=>alt>=100 && build.stack.includes('Fuel_1'), success:'Exactly. Fuel burns away, so the rocket gets lighter. Next, you will choose small, medium, or large parts.'
@@ -1555,7 +1565,7 @@ function schoolLaunchInstruction(){
   const l=currentSchoolLesson();
   const step=activeSchoolLesson+1;
   if(step<=2) return `<b>Rocket School:</b> ${l.instruction}`;
-  if(step===3) return `<b>Rocket School:</b> Watch <b>LIVE MASS</b>. It should drop while fuel burns.`;
+  if(step===3) return `<b>Rocket School:</b> Launch the fuel rocket. At the top, look at how high it went.`;
   if(step===4) return `<b>Rocket School:</b> Try small, medium, and large parts. Bigger parts add power, but also mass.`;
   if(step===5) return `<b>Rocket School:</b> When Stage 1 burns out, press <b>DROP EMPTY STAGE</b>.`;
   return `<b>Rocket School:</b> Watch the side boosters light with Stage 1 and separate when they burn out.`;
@@ -3194,13 +3204,14 @@ function drawScene(rocketY,tilt,burning,finished=false){
   }
 
   drawReusableBoosterPanel();
-  drawAltScale();
+  const simpleStudentFlight=document.body.classList.contains('udl-kid') && gameMode==='easy';
+  if(!simpleStudentFlight) drawAltScale();
 
   // Event text
   if(launchState?.events?.length){
     const ev=launchState.events[0];
     const ec=ev.type==='bad'?'#ff8fab':(ev.type==='good'?'#9bf6c3':'#ffd166');
-    ctx.font='bold 15px "Barlow Condensed",sans-serif';
+    ctx.font='bold 17px Atkinson Hyperlegible, Trebuchet MS, Arial, sans-serif';
     ctx.textAlign='center';ctx.fillStyle=ec;
     ctx.fillText(ev.text,isLandingMode()?260:510,28);
   }
@@ -3786,7 +3797,7 @@ function openLaunch(){
     ? 'Fully Unlocked mode will not change Career unlock progress.'
     : 'Career Mode altitude records unlock new parts.';
   const launchVerb=(gameMode==='easy' && activeSchoolLesson<4)?'LAUNCH ROCKET':'IGNITE STAGE 1';
-  setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>${modeConfig().label}</b>: ${gameMode==='easy'?'Press <b>LAUNCH ROCKET</b>. The game helps with ignition.':'Hit <b>'+launchVerb+'</b> in the <b style="color:var(--green)">green zone</b>.'} ${modeNote}</div></div>`);
+  setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>${modeConfig().label}</b>: ${gameMode==='easy'?'Press <b>LAUNCH ROCKET</b>. Watch it fly.':'Hit <b>'+launchVerb+'</b> in the <b style="color:var(--green)">green zone</b>.'} ${modeNote}</div></div>`);
   updateModeAssistVisuals();
   updateHUD();
   updateLandingControls();
@@ -3907,6 +3918,20 @@ function finishFlight(){
     ? ` Staging: ${launchState.stagingFeedback.map(f=>`S${f.stage}→S${f.next} ${f.feedback}`).join('; ')}. Bonus: ${launchState.stagingBonus}.`
     : '';
   const schoolNote = completeSchoolLessonIfReady(altitude);
+
+  // UDL Rocket School student view: report only the top altitude, not cockpit data.
+  if(document.body.classList.contains('udl-kid') && gameMode==='easy'){
+    const isLicenseFlight=rocketLicenseEarned;
+    const nextLine = isLicenseFlight
+      ? 'Rocket License flight complete. Change one thing and launch again.'
+      : (lastSchoolPassed ? 'Nice testing. You are ready for the next lesson.' : 'Try again. Load the lesson rocket and launch once more.');
+    drawScene(250,0,false,true);
+    setResult(`<div class="result-icon">🌟</div><div><div class="big">You reached ${formatDistance(altitude)} high!</div><div class="note">${nextLine}</div>${udlReflectionHtml()}</div>`);
+    updateHUD();
+    renderStats();
+    return;
+  }
+
   const landingNote = isLandingMode() ? (()=>{ 
     const profile=launchState.landingProfile || currentLandingProfile();
     const missionOk=altitude>=profile.targetAlt;
