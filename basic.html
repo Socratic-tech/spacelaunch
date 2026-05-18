@@ -591,6 +591,26 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 .udl-reflect{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px}
 .udl-reflect-title{font-family:var(--font-hud);font-size:12px;color:var(--accent);letter-spacing:.06em}.udl-reflect-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.udl-reflect button{border-radius:10px;border:1px solid var(--border2);background:var(--panel2);color:var(--text);font-weight:800;padding:10px;cursor:pointer}.udl-reflect button.selected{background:rgba(60,244,143,.18);border-color:var(--green);color:var(--green)}
 .udl-big-text{font-size:21px}.udl-big-text .school-title{font-size:35px}.udl-big-text .school-instruction{font-size:24px}.udl-big-text .udl-step-card{font-size:21px}
+
+.udl-license-card{display:grid;gap:12px;padding:16px;border-radius:18px;background:linear-gradient(180deg,#123f5f,#0d2b42);border:2px solid rgba(60,244,143,.44);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.udl-license-badge{display:inline-flex;align-items:center;gap:8px;width:max-content;border-radius:999px;padding:8px 12px;background:rgba(60,244,143,.16);border:1px solid rgba(60,244,143,.38);color:#8cffbd;font-family:var(--font-hud);font-size:13px;letter-spacing:.08em}
+.udl-license-title{font-family:var(--font-hud);font-size:30px;line-height:1.02;color:white;text-transform:uppercase}
+.udl-license-text{font-size:18px;line-height:1.32;color:#d8f5ff;background:rgba(255,255,255,.06);padding:12px;border-radius:12px}
+.udl-license-mini{font-family:var(--font-mono);font-size:12px;color:#fff0a8;background:rgba(245,196,0,.1);border:1px solid rgba(245,196,0,.22);padding:9px 10px;border-radius:10px}
+.udl-license-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.udl-license-grid button,.udl-license-wide{border:0;border-radius:14px;background:linear-gradient(180deg,#2f8dd3,#166197);color:white;font-family:var(--font-ui);font-weight:900;font-size:16px;min-height:54px;padding:11px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.24)}
+.udl-license-grid button:hover,.udl-license-wide:hover{filter:brightness(1.08)}
+.udl-license-grid button.green,.udl-license-wide.green{background:linear-gradient(180deg,#3cf48f,#1ab76a);color:#052013}
+.udl-license-grid button.gold{background:linear-gradient(180deg,#ffd84d,#d59b08);color:#241700}
+.udl-license-grid button.purple{background:linear-gradient(180deg,#8d7cff,#5747c9);color:white}
+.udl-license-grid button.gray{background:linear-gradient(180deg,#627482,#354550);color:white}
+.udl-license-launch{display:grid;grid-template-columns:1fr;gap:8px;margin-top:2px}
+.udl-license-launch .udl-license-wide{font-family:var(--font-hud);font-size:19px;min-height:64px}
+.udl-kid.licensed .udl-step-card:first-child span{font-size:0}
+.udl-kid.licensed .udl-step-card:first-child span::after{content:'Use your license';font-size:18px}
+.udl-kid.licensed .udl-step-card:nth-child(2) span{font-size:0}
+.udl-kid.licensed .udl-step-card:nth-child(2) span::after{content:'Build a rocket';font-size:18px}
+.udl-kid.licensed .school-title{font-size:30px}
 @media(max-width:900px){.udl-strip{flex-direction:column}.udl-steps{grid-template-columns:1fr}.udl-kid .app,.udl-kid.udl-tools-hidden .app{grid-template-columns:1fr}.udl-kid .stage{min-height:460px}.udl-kid .hud-strip{grid-template-columns:repeat(2,1fr)}.udl-kid .launch-controls{grid-template-columns:1fr 1fr}.udl-reflect-row{grid-template-columns:1fr}}
 
 </style>
@@ -1217,6 +1237,9 @@ let activeTab = 'THRUST';
 let build = {stack:[], fins:[], nose:null};
 
 const EASY_PARTS = new Set(['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fuel_2','SRB_4','Fin_1','Fin_2','Fin_3','Nose_3','Nose_6','Nose_8','Nose_9','Nose_10']);
+const SIMPLE_LICENSE_PARTS = new Set(['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fuel_2','SRB_4','Fin_1','Fin_2','Fin_3','Nose_3','Nose_6','Nose_8','Nose_9','Nose_10']);
+const ROCKET_LICENSE_KEY='slRocketLicenseEarned';
+let rocketLicenseEarned = localStorage.getItem(ROCKET_LICENSE_KEY)==='1';
 const ROCKET_SCHOOL_LEVEL_KEY='slRocketSchoolLevel';
 const ROCKET_SCHOOL_SELECTED_KEY='slRocketSchoolSelected';
 const ROCKET_SCHOOL_LESSONS = [
@@ -1263,7 +1286,7 @@ const ROCKET_SCHOOL_LESSONS = [
     words:'Rocket word: booster means extra engine power used at launch.', primary:'LOAD BOOSTER ROCKET',
     parts:['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fuel_2','SRB_4','Nose_3','Nose_6','Nose_8','Nose_9','Fin_1','Fin_2','Fin_3'],
     build:{nose:'Nose_6',stack:['Engine_1','Fuel_2','Engine_5','SRB_4'],fins:['Fin_2','Fin_2']},
-    check:(alt)=>alt>=500 && build.stack.some(id=>isSideBoosterPart(getPart(id))), success:'Rocket School complete. You can now use Easy Mode as a guided lab or move into Career Mode.'
+    check:(alt)=>alt>=500 && build.stack.some(id=>isSideBoosterPart(getPart(id))), success:'Rocket School complete. You earned your Rocket License. Now you can build your own simple rocket.'
   }
 ];
 let easySchoolLevel=Math.max(0,Math.min(ROCKET_SCHOOL_LESSONS.length-1,Number(localStorage.getItem(ROCKET_SCHOOL_LEVEL_KEY)||0)));
@@ -1446,6 +1469,7 @@ function easyAllowedParts(){
   for(let i=0;i<=easySchoolLevel && i<ROCKET_SCHOOL_LESSONS.length;i++){
     (ROCKET_SCHOOL_LESSONS[i].parts||[]).forEach(id=>allowed.add(id));
   }
+  if(rocketLicenseEarned) SIMPLE_LICENSE_PARTS.forEach(id=>allowed.add(id));
   return allowed;
 }
 function currentSchoolLesson(){ return ROCKET_SCHOOL_LESSONS[activeSchoolLesson] || ROCKET_SCHOOL_LESSONS[0]; }
@@ -1480,6 +1504,7 @@ function updateModeAssistVisuals(){
   document.body.classList.toggle('mode-career',gameMode==='career');
   document.body.classList.toggle('mode-sandbox',gameMode==='sandbox');
   document.body.classList.toggle('mode-landing',gameMode==='landing');
+  document.body.classList.toggle('licensed',gameMode==='easy' && rocketLicenseEarned);
 }
 function updateModeUI(){
   document.querySelectorAll('.mode-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===gameMode));
@@ -1526,6 +1551,7 @@ function loadSchoolLesson(i=activeSchoolLesson){
   renderAll();
 }
 function schoolLaunchInstruction(){
+  if(rocketLicenseEarned) return `<b>Rocket License:</b> Build your own simple rocket. Change one thing, launch, and notice what happens.`;
   const l=currentSchoolLesson();
   const step=activeSchoolLesson+1;
   if(step<=2) return `<b>Rocket School:</b> ${l.instruction}`;
@@ -1544,7 +1570,33 @@ function renderRocketSchool(){
   if(sample) sample.textContent=gameMode==='easy'?'1 LOAD LESSON ROCKET':(gameMode==='landing'?'⚡ LOAD SELECTED MISSION':'⚡ SAMPLE BUILD');
   if(!panel||!body||gameMode!=='easy') return;
   const l=currentSchoolLesson();
-  if(label) label.textContent=`LESSON ${activeSchoolLesson+1} / ${ROCKET_SCHOOL_LESSONS.length}`;
+  if(label) label.textContent=rocketLicenseEarned?'ROCKET LICENSE':`LESSON ${activeSchoolLesson+1} / ${ROCKET_SCHOOL_LESSONS.length}`;
+
+  if(rocketLicenseEarned){
+    body.innerHTML=`<div class="udl-license-card">
+      <div class="udl-license-badge">🚀 ROCKET LICENSE</div>
+      <div class="udl-license-title">You finished Rocket School!</div>
+      <div class="udl-license-text">Now you can build a simple rocket. Pick one change, launch it, and see what happens.</div>
+      <div class="udl-license-mini">Simple rule: engine + nose + fins. Add fuel if you want it to push longer.</div>
+      <div class="udl-license-grid">
+        <button class="green" onclick="licenseBuilder('starter')">Starter Rocket</button>
+        <button class="gray" onclick="licenseBuilder('clear')">Start Over</button>
+        <button onclick="licenseBuilder('engine-small')">Small Engine</button>
+        <button onclick="licenseBuilder('engine-medium')">Medium Engine</button>
+        <button onclick="licenseBuilder('engine-large')">Large Engine</button>
+        <button onclick="licenseBuilder('fuel-small')">Add Small Fuel</button>
+        <button onclick="licenseBuilder('fuel-medium')">Add Medium Fuel</button>
+        <button onclick="licenseBuilder('fins')">Add Fins</button>
+        <button class="gold" onclick="licenseBuilder('nose')">Change Nose</button>
+        <button class="purple" onclick="licenseBuilder('boosters')">Side Boosters</button>
+      </div>
+      <div class="udl-license-launch">
+        <button class="udl-license-wide green" onclick="openLaunch()">2 LAUNCH MY ROCKET</button>
+        <button class="udl-license-wide" onclick="licenseBuilder('practice')">Practice Lessons Again</button>
+      </div>
+    </div>`;
+    return;
+  }
 
   const simpleTrail=ROCKET_SCHOOL_LESSONS.map((lesson,i)=>{
     const cls=i===activeSchoolLesson?'active':(i<=easySchoolLevel?'open':'locked');
@@ -1606,6 +1658,7 @@ function schoolLessonPassed(altitude){
 function completeSchoolLessonIfReady(altitude){
   lastSchoolPassed=false;
   if(gameMode!=='easy') return '';
+  if(rocketLicenseEarned) return ' Rocket License flight: Change one thing and test again.';
   const lesson=currentSchoolLesson();
   const passed=schoolLessonPassed(altitude);
   lastSchoolPassed=!!passed;
@@ -1618,7 +1671,13 @@ function completeSchoolLessonIfReady(altitude){
     localStorage.setItem(ROCKET_SCHOOL_SELECTED_KEY,activeSchoolLesson);
     note+=` New lesson unlocked: ${currentSchoolLesson().title}.`;
     renderParts();
+  } else if(activeSchoolLesson===ROCKET_SCHOOL_LESSONS.length-1){
+    rocketLicenseEarned=true;
+    localStorage.setItem(ROCKET_LICENSE_KEY,'1');
+    note+=' Rocket License earned! You can now build your own simple rocket.';
+    renderParts();
   }
+  updateModeAssistVisuals();
   renderRocketSchool();
   return note;
 }
@@ -1726,7 +1785,8 @@ function clearBuild(){ build={stack:[],fins:[],nose:null}; renderAll(); }
 function buildSample(){
   // Mode-aware samples: Rocket School lessons in Easy, simple Career, exploratory Fully Unlocked.
   if(gameMode==='easy'){
-    loadSchoolLesson(activeSchoolLesson);
+    if(rocketLicenseEarned) licenseBuilder('starter');
+    else loadSchoolLesson(activeSchoolLesson);
     return;
   }
   if(gameMode==='landing'){
@@ -3863,6 +3923,65 @@ function finishFlight(){
 
 
 
+
+// ── Rocket License Simple Builder ───────────────────────────
+function ensureLicenseBuild(){
+  if(!build.nose && !build.stack.length && !build.fins.length){
+    build={nose:'Nose_6',stack:['Engine_2'],fins:['Fin_1','Fin_1']};
+  }
+}
+function setLicenseEngine(id){
+  const extras=(build.stack||[]).filter(pid=>{
+    const p=getPart(pid);
+    return p && p.pieceType!=='EnginePiece' && !isSideBoosterPart(p);
+  });
+  const boosters=sideBoosterIds(build.stack||[]);
+  build.stack=[id,...extras,...boosters];
+}
+function setLicenseFuel(id){
+  const engine=(build.stack||[]).find(pid=>getPart(pid)?.pieceType==='EnginePiece') || 'Engine_2';
+  const boosters=sideBoosterIds(build.stack||[]);
+  build.stack=[engine,id,...boosters];
+}
+function cycleLicenseNose(){
+  const noses=['Nose_3','Nose_6','Nose_8','Nose_9'];
+  const idx=noses.indexOf(build.nose);
+  build.nose=noses[(idx+1+noses.length)%noses.length];
+}
+function licenseBuilder(action){
+  if(gameMode!=='easy') setGameMode('easy');
+  if(!rocketLicenseEarned) return;
+  if(action==='practice'){
+    rocketLicenseEarned=false;
+    localStorage.removeItem(ROCKET_LICENSE_KEY);
+    activeSchoolLesson=0;
+    easySchoolLevel=Math.max(easySchoolLevel,0);
+    localStorage.setItem(ROCKET_SCHOOL_SELECTED_KEY,activeSchoolLesson);
+    loadSchoolLesson(activeSchoolLesson);
+    updateModeAssistVisuals();
+    return;
+  }
+  if(action==='starter') build={nose:'Nose_6',stack:['Engine_2'],fins:['Fin_1','Fin_1']};
+  else if(action==='clear') build={nose:null,stack:[],fins:[]};
+  else {
+    ensureLicenseBuild();
+    if(action==='engine-small') setLicenseEngine('Engine_3');
+    if(action==='engine-medium') setLicenseEngine('Engine_2');
+    if(action==='engine-large') setLicenseEngine('Engine_1');
+    if(action==='fuel-small') setLicenseFuel('Fuel_1');
+    if(action==='fuel-medium') setLicenseFuel('Fuel_2');
+    if(action==='fins') build.fins=['Fin_2','Fin_2'];
+    if(action==='nose') cycleLicenseNose();
+    if(action==='boosters'){
+      const has=sideBoosterIds(build.stack).length>0;
+      build.stack=mainStackIds(build.stack);
+      if(!has) build.stack.push('SRB_4');
+    }
+  }
+  sanitizeBuildForMode();
+  renderAll();
+}
+
 // ── UDL 3.0 Grades 2–4 Support Tools ───────────────────────
 function udlToggleTools(){
   document.body.classList.toggle('udl-tools-hidden');
@@ -3872,6 +3991,7 @@ function udlToggleBigText(){
   document.body.classList.toggle('udl-big-text');
 }
 function udlCurrentDirectionsText(){
+  if(gameMode==='easy' && rocketLicenseEarned) return 'You earned your Rocket License. Build a simple rocket, launch it, and change one thing to test again.';
   const lesson=currentSchoolLesson ? currentSchoolLesson() : null;
   if(!lesson) return 'Pick a lesson. Load the rocket. Launch and notice what changed.';
   return `${lesson.level}. ${lesson.title}. ${lesson.goal.replace('Goal: ','')} ${lesson.instruction}`;
@@ -3886,9 +4006,11 @@ function udlReadDirections(){
   }catch(e){ alert(text); }
 }
 function udlReflectionHtml(){
-  const action=lastSchoolPassed
-    ? `<div class="udl-next-actions"><button onclick="udlStartNextLesson()">NEXT LESSON</button></div>`
-    : `<div class="udl-next-actions"><button onclick="udlRetryLesson()">TRY AGAIN</button></div>`;
+  const action=rocketLicenseEarned
+    ? `<div class="udl-next-actions"><button onclick="closeLaunchOverlay();renderRocketSchool();">BUILD AGAIN</button></div>`
+    : (lastSchoolPassed
+      ? `<div class="udl-next-actions"><button onclick="udlStartNextLesson()">NEXT LESSON</button></div>`
+      : `<div class="udl-next-actions"><button onclick="udlRetryLesson()">TRY AGAIN</button></div>`);
   return `<div class="udl-reflect"><div class="udl-reflect-title">WHAT DID YOU NOTICE?</div><div class="udl-reflect-row">
     <button onclick="udlPickReflection(this)">It went higher</button>
     <button onclick="udlPickReflection(this)">It was too heavy</button>
@@ -3906,15 +4028,16 @@ function closeLaunchOverlay(){
 }
 function udlLaunchLesson(){
   if(gameMode!=='easy') setGameMode('easy');
-  if(document.body.classList.contains('udl-kid')) loadSchoolLesson(activeSchoolLesson);
+  if(document.body.classList.contains('udl-kid') && !rocketLicenseEarned) loadSchoolLesson(activeSchoolLesson);
   openLaunch();
 }
 function startMainLaunch(){
-  if(document.body.classList.contains('udl-kid') && gameMode==='easy') udlLaunchLesson();
+  if(document.body.classList.contains('udl-kid') && gameMode==='easy' && !rocketLicenseEarned) udlLaunchLesson();
   else openLaunch();
 }
 function udlStartNextLesson(){
   closeLaunchOverlay();
+  if(rocketLicenseEarned){ renderRocketSchool(); renderAll(); return; }
   loadSchoolLesson(activeSchoolLesson);
 }
 function udlRetryLesson(){
