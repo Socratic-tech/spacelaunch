@@ -174,37 +174,16 @@ header{
     linear-gradient(rgba(255,255,255,.06),rgba(5,20,42,.14));
 }
 
-/* Launch complex drawn via pseudo-element */
+/* Launch complex drawn via pseudo-element
+   Builder view only: keep this simple and outside the rocket work area.
+   The animated launch canvas still draws the detailed scrolling tower. */
 .stage::after{
-  content:"";position:absolute;
-  left:50%;bottom:54px;width:680px;height:540px;
-  transform:translateX(-50%);
-  z-index:1;pointer-events:none;opacity:.94;
-  background:
-    /* umbilical arms reaching from tower toward the rocket */
-    linear-gradient(8deg,transparent 0 56%,rgba(60,74,82,.9) 56% 58.2%,transparent 58.2% 100%),
-    linear-gradient(-8deg,transparent 0 57.5%,rgba(245,196,0,.85) 57.5% 59.5%,transparent 59.5% 100%),
-    linear-gradient(0deg,transparent 0 63%,rgba(56,72,82,.95) 63% 65%,transparent 65% 100%),
-    /* service tower columns */
-    linear-gradient(90deg,
-      transparent 0 74px,#52616a 74px 83px,transparent 83px 124px,#52616a 124px 133px,
-      transparent 133px 330px,rgba(245,196,0,.85) 330px 337px,transparent 337px 100%),
-    /* tower platforms */
-    repeating-linear-gradient(0deg,transparent 0 62px,rgba(245,196,0,.88) 62px 74px,transparent 74px 108px),
-    /* diagonal tower bracing */
-    repeating-linear-gradient(48deg,transparent 0 42px,rgba(27,45,57,.72) 42px 48px,transparent 48px 92px),
-    repeating-linear-gradient(132deg,transparent 0 44px,rgba(27,45,57,.68) 44px 50px,transparent 50px 96px),
-    /* lightning mast on the far side */
-    linear-gradient(90deg,transparent 0 558px,rgba(70,84,92,.85) 558px 564px,transparent 564px 100%);
-  -webkit-mask:
-    linear-gradient(90deg,#000 52px 150px,transparent 150px 305px,#000 305px 352px,transparent 352px 536px,#000 536px 590px,transparent 590px),
-    linear-gradient(#000,#000);
-  mask:
-    linear-gradient(90deg,#000 52px 150px,transparent 150px 305px,#000 305px 352px,transparent 352px 536px,#000 536px 590px,transparent 590px),
-    linear-gradient(#000,#000);
-  -webkit-mask-composite:source-in;
-  mask-composite:intersect;
+  /* Build screen intentionally has no towers.
+     The launch canvas still draws the launch tower and scrolls it away during flight. */
+  content:"";
+  display:none;
 }
+
 
 .dropzone{
   position:absolute;left:50%;bottom:106px;
@@ -942,6 +921,58 @@ function partSVG(p, w=44, h=44){
     </svg>`;
   }
 
+  if(t==='FuelPiece'){
+    let accent='#cc1f28', fillA='#7a8288', fillB='#f0f3f2', fillC='#9aa2a8';
+    if(p.screenNameX&&p.screenNameX.includes('Liquid')){accent='#1a6abf';fillA='#6f9fc6';fillB='#d7edff';fillC='#365a78';}
+    else if(p.screenNameX&&p.screenNameX.includes('Hybrid')){accent='#3a8828';fillA='#6da460';fillB='#def2d3';fillC='#365d30';}
+    else if(p.screenNameX&&p.screenNameX.includes('Magneto')){accent='#6a28cc';fillA='#9a7dd6';fillB='#ece3ff';fillC='#4b3282';}
+    const tubeW=w*.76, x=(w-tubeW)/2, capH=Math.max(5,h*.08);
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="fuel${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="${fillA}"/>
+          <stop offset="20%" stop-color="${fillB}"/>
+          <stop offset="58%" stop-color="#e9eeee"/>
+          <stop offset="100%" stop-color="${fillC}"/>
+        </linearGradient>
+      </defs>
+      <rect x="${x}" y="${capH/2}" width="${tubeW}" height="${h-capH}" rx="7" fill="url(#fuel${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+      <ellipse cx="${w/2}" cy="${capH}" rx="${tubeW/2}" ry="${capH*.62}" fill="#dfe5e8" stroke="#1a1f24" stroke-width="1.2"/>
+      <rect x="${x+2}" y="${h*.52}" width="${tubeW-4}" height="${Math.max(4,h*.07)}" fill="${accent}" opacity=".92"/>
+      <ellipse cx="${w/2}" cy="${h-capH*.35}" rx="${tubeW/2}" ry="${capH*.62}" fill="rgba(40,48,54,.25)" stroke="#1a1f24" stroke-width="1.2"/>
+    </svg>`;
+  }
+
+  if(t==='NosePiece'){
+    let accent='#cc1f28';
+    const name=p.screenNameX||'';
+    const bodyW=w*.78, x=(w-bodyW)/2;
+    let path;
+    if(name.includes('Conical')){
+      path=`M ${w/2} 2 L ${x+bodyW} ${h*.78} Q ${w/2} ${h*.95} ${x} ${h*.78} Z`;
+    } else if(name.includes('Ogive')){
+      path=`M ${w/2} 2 C ${x+bodyW*.98} ${h*.18} ${x+bodyW*.96} ${h*.62} ${x+bodyW*.82} ${h*.80} Q ${w/2} ${h*.94} ${x+bodyW*.18} ${h*.80} C ${x+bodyW*.04} ${h*.62} ${x+bodyW*.02} ${h*.18} ${w/2} 2 Z`;
+    } else {
+      path=`M ${w/2} 2 C ${x+bodyW*.98} ${h*.20} ${x+bodyW*.95} ${h*.68} ${x+bodyW*.74} ${h*.82} Q ${w/2} ${h*.95} ${x+bodyW*.26} ${h*.82} C ${x+bodyW*.05} ${h*.68} ${x+bodyW*.02} ${h*.20} ${w/2} 2 Z`;
+    }
+    if(name.includes('Clown')) accent='#ff7a20';
+    else if(name.includes('Jewel')) accent='#6a28cc';
+    else if(name.includes('Shark')) accent='#284888';
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="nose${p.name}" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#6d747b"/>
+          <stop offset="18%" stop-color="#f7f7f4"/>
+          <stop offset="56%" stop-color="#fdfdfb"/>
+          <stop offset="100%" stop-color="#8d949a"/>
+        </linearGradient>
+      </defs>
+      <path d="${path}" fill="url(#nose${p.name})" stroke="#1a1f24" stroke-width="1.8"/>
+      <rect x="${x}" y="${h*.78}" width="${bodyW}" height="${h*.12}" fill="#f1f3f2" stroke="#1a1f24" stroke-width="1.4"/>
+      <rect x="${x+1}" y="${h*.88}" width="${bodyW-2}" height="${Math.max(3,h*.04)}" fill="${accent}" opacity=".88"/>
+    </svg>`;
+  }
+
   if(t==='SRBPiece'){
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1604,14 +1635,11 @@ const SVG_ONLY_NAMES = new Set([
 ]);
 
 function spriteImg(p, w, h) {
-  // Use SVG for engines, fins, and studded parts
-  if (SVG_ONLY_TYPES.has(p.pieceType) || SVG_ONLY_NAMES.has(p.name)) {
-    return `<div style="width:${w}px;height:${h}px">${partSVG(p,w,h)}</div>`;
-  }
-  const src = 'assets/' + (PART_ART[p.name] || 'img_1685_lossless.png').replace('assets/','');
-  return `<img src="${src}" alt="${p.screenNameX}"
-    style="width:${w}px;height:${h}px;object-fit:fill;display:block;image-rendering:auto"
-    onerror="this.replaceWith(document.createRange().createContextualFragment(\`<div style='width:${w}px;height:${h}px'>${partSVG(p,w,h).replace(/`/g,"'")}</div>\`))">`;
+  // Builder/editor reliability pass:
+  // use procedural SVG for every rocket part so newly added variants never show
+  // broken image icons or browser alt text. The launch canvas still uses sprites
+  // where available and falls back to vector art when needed.
+  return `<div style="width:${w}px;height:${h}px">${partSVG(p,w,h)}</div>`;
 }
 
 // ── Procedural cowling: bridges the engine bell to the body above it ──
