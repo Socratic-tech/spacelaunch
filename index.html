@@ -279,7 +279,21 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 }
 .ms-chip.reached{border-color:var(--green);color:var(--green);background:rgba(0,232,122,.07)}
 .ms-dot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0}
-.ms-chip.reached .ms-dot{background:var(--green);box-shadow:0 0 5px var(--green)}
+.tier-badge{
+  font-family:var(--font-hud);font-size:11px;letter-spacing:.06em;
+  background:rgba(255,255,255,.06);border:1px solid var(--border2);
+  padding:5px 10px;border-radius:6px;display:flex;flex-direction:column;gap:2px;
+  min-width:200px;
+}
+.tier-progress-bar{height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin-top:3px;overflow:hidden}
+.tier-progress-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.tier-next{font-size:9px;color:var(--muted);font-family:var(--font-mono);margin-top:1px}
+.tier-toast{max-width:320px !important}
+.unlock-tip{
+  font-family:var(--font-mono);font-size:10px;color:#a0c8e0;
+  margin-top:6px;line-height:1.5;border-top:1px solid rgba(255,255,255,.1);padding-top:6px;
+}
+.ms-chip .ms-tier{font-size:8px;color:var(--muted);margin-left:auto}
 
 
 /* ════════════════════════════════
@@ -370,6 +384,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
     </div>
   </div>
   <div class="header-right">
+    <div class="tier-badge" id="tierBadge"></div>
     <div class="best-badge" id="bestBadge">BEST: 0 m</div>
     <button class="btn-launch" id="launchBtn">▶ LAUNCH</button>
   </div>
@@ -434,7 +449,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
       <div class="panel-header">CURRENT BUILD</div>
       <div class="panel-body">
         <div class="build-list" id="buildList"></div>
-        <p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:10px;line-height:1.6">Fly further to unlock more parts. T/W above 1.0 required for liftoff. Add fins for stability.</p>
+        <p id="coachTip" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:10px;line-height:1.7"></p>
       </div>
     </div>
   </div>
@@ -481,61 +496,168 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 //  DATA
 // ══════════════════════════════════════════════════════════════
 const ALL_PARTS = [
-  // ── ENGINES ──
-  {name:"Engine_1",pieceType:"EnginePiece",screenNameX:"Solid Fuel (lrg)",cardType:"THRUST",earnedAt:0,thrust:105000,burnTime:13,weight:900,weightFuel:2000,stability:0.4,dragCoeff:0.72},
-  {name:"Engine_2",pieceType:"EnginePiece",screenNameX:"Solid Fuel (med)",cardType:"THRUST",earnedAt:0,thrust:30000,burnTime:18,weight:400,weightFuel:600,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_6",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (med)",cardType:"THRUST",earnedAt:0,thrust:45500,burnTime:18,weight:450,weightFuel:1000,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_3",pieceType:"EnginePiece",screenNameX:"Solid Fuel (sml)",cardType:"THRUST",earnedAt:335000,thrust:10000,burnTime:22,weight:100,weightFuel:300,stability:0,dragCoeff:0.72},
-  {name:"Engine_7",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (lrg)",cardType:"THRUST",earnedAt:95000,thrust:280000,burnTime:13,weight:1900,weightFuel:4500,stability:0.4,dragCoeff:0.72},
-  {name:"Engine_9",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (lrg)",cardType:"THRUST",earnedAt:270000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
-  {name:"Engine_4",pieceType:"EnginePiece",screenNameX:"Magnetoplasma",cardType:"THRUST",earnedAt:380000,thrust:30000,burnTime:18,weight:400,weightFuel:600,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_10",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (med)",cardType:"THRUST",earnedAt:450000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_5",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (sml)",cardType:"THRUST",earnedAt:640000,thrust:20000,burnTime:24,weight:200,weightFuel:600,stability:0,dragCoeff:0.72},
-  {name:"Engine_8",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (sml)",cardType:"THRUST",earnedAt:625000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
-  {name:"Engine_11",pieceType:"EnginePiece",screenNameX:"Cow Power",cardType:"THRUST",earnedAt:590000,thrust:30000,burnTime:18,weight:300,weightFuel:400,stability:0.2,dragCoeff:0.72,zany:1},
-  {name:"Engine_12",pieceType:"EnginePiece",screenNameX:"Puppy Power",cardType:"THRUST",earnedAt:390000,thrust:18000,burnTime:22,weight:100,weightFuel:300,stability:0,dragCoeff:0.72,zany:1},
-  {name:"Engine_13",pieceType:"EnginePiece",screenNameX:"Circus Clown (lrg)",cardType:"THRUST",earnedAt:1700000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
-  {name:"Engine_14",pieceType:"EnginePiece",screenNameX:"Circus Clown (med)",cardType:"THRUST",earnedAt:1950000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_15",pieceType:"EnginePiece",screenNameX:"Circus Clown (sml)",cardType:"THRUST",earnedAt:3000000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
-  {name:"Engine_16",pieceType:"EnginePiece",screenNameX:"Hot Rod (sml)",cardType:"THRUST",earnedAt:3050000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
-  {name:"Engine_17",pieceType:"EnginePiece",screenNameX:"Hot Rod (med)",cardType:"THRUST",earnedAt:4250000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_18",pieceType:"EnginePiece",screenNameX:"Hot Rod (lrg)",cardType:"THRUST",earnedAt:4500000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
-  {name:"Engine_19",pieceType:"EnginePiece",screenNameX:"Bejeweled (med)",cardType:"THRUST",earnedAt:3750000,thrust:60000,burnTime:18,weight:550,weightFuel:750,stability:0.2,dragCoeff:0.72},
-  {name:"Engine_20",pieceType:"EnginePiece",screenNameX:"Bejeweled (lrg)",cardType:"THRUST",earnedAt:4000000,thrust:200000,burnTime:13,weight:1500,weightFuel:1500,stability:0.4,dragCoeff:0.72},
-  {name:"Engine_21",pieceType:"EnginePiece",screenNameX:"Bejeweled (sml)",cardType:"THRUST",earnedAt:4550000,thrust:35000,burnTime:21,weight:300,weightFuel:500,stability:0,dragCoeff:0.72},
-  // ── FINS ──
-  {name:"Fin_1",pieceType:"FinPiece",screenNameX:"3×3 Fin",cardType:"STABILIZER",earnedAt:0,weight:10,stability:1.0},
-  {name:"Fin_2",pieceType:"FinPiece",screenNameX:"3×5 Fin",cardType:"STABILIZER",earnedAt:0,weight:15,stability:1.5},
-  {name:"Fin_3",pieceType:"FinPiece",screenNameX:"2×3 Fin",cardType:"STABILIZER",earnedAt:0,weight:10,stability:0.5},
-  {name:"Fin_4",pieceType:"FinPiece",screenNameX:"5×5 Fin",cardType:"STABILIZER",earnedAt:10000,weight:20,stability:1.5},
-  {name:"Fin_5",pieceType:"FinPiece",screenNameX:"6×3 Fin",cardType:"STABILIZER",earnedAt:70000,weight:15,stability:2.0},
-  {name:"Wing_1",pieceType:"FinPiece",screenNameX:"Dragon Wing",cardType:"STABILIZER",earnedAt:105000,weight:15,stability:1.5,zany:1},
-  {name:"Fin_7",pieceType:"FinPiece",screenNameX:"4×3 Fin",cardType:"STABILIZER",earnedAt:270000,weight:20,stability:2.0},
-  {name:"Fin_6",pieceType:"FinPiece",screenNameX:"Shark Fin",cardType:"STABILIZER",earnedAt:600000,weight:30,stability:3.0,zany:1},
-  // ── NOSE CONES ──
-  {name:"Nose_10",pieceType:"NosePiece",screenNameX:"Ogive Nose (lrg)",cardType:"NOSE",earnedAt:0,weight:20,stability:0,dragCoeff:0.7},
-  {name:"Nose_6",pieceType:"NosePiece",screenNameX:"Elliptical Nose (med)",cardType:"NOSE",earnedAt:0,weight:15,stability:0,dragCoeff:0.5},
-  {name:"Nose_2",pieceType:"NosePiece",screenNameX:"Clown Nose",cardType:"NOSE",earnedAt:20000,weight:5,stability:1,dragCoeff:0.5,zany:1},
-  {name:"Nose_7",pieceType:"NosePiece",screenNameX:"Elliptical Nose (lrg)",cardType:"NOSE",earnedAt:100000,weight:20,stability:0,dragCoeff:0.5},
-  {name:"Nose_9",pieceType:"NosePiece",screenNameX:"Ogive Nose (med)",cardType:"NOSE",earnedAt:200000,weight:10,stability:0,dragCoeff:0.7},
-  {name:"Nose_8",pieceType:"NosePiece",screenNameX:"Ogive Nose (sml)",cardType:"NOSE",earnedAt:305000,weight:5,stability:0,dragCoeff:0.7},
-  {name:"Nose_3",pieceType:"NosePiece",screenNameX:"Elliptical Nose (sml)",cardType:"NOSE",earnedAt:400000,weight:10,stability:0,dragCoeff:0.5},
-  {name:"Nose_1",pieceType:"NosePiece",screenNameX:"Conical Nose (sml)",cardType:"NOSE",earnedAt:470000,weight:5,stability:0,dragCoeff:0.6},
-  {name:"Nose_11",pieceType:"NosePiece",screenNameX:"Conical Nose (med)",cardType:"NOSE",earnedAt:560000,weight:10,stability:0,dragCoeff:0.6},
-  {name:"Nose_12",pieceType:"NosePiece",screenNameX:"Conical Nose (lrg)",cardType:"NOSE",earnedAt:680000,weight:10,stability:0,dragCoeff:0.6},
-  {name:"Nose_5",pieceType:"NosePiece",screenNameX:"Schnoz Nose",cardType:"NOSE",earnedAt:900000,weight:5,stability:0,dragCoeff:0.5,zany:1},
-  {name:"Nose_13",pieceType:"NosePiece",screenNameX:"Shark Nose",cardType:"NOSE",earnedAt:1150000,weight:20,stability:0,dragCoeff:0.6,zany:1},
-  {name:"Nose_4",pieceType:"NosePiece",screenNameX:"Jewel Nose",cardType:"NOSE",earnedAt:1600000,weight:20,stability:10,dragCoeff:0.5,zany:1},
-  // ── ORBITER / FUEL ──
-  {name:"Fuel_1",pieceType:"FuelPiece",screenNameX:"Fuel Tank (sml)",cardType:"ORBITER",earnedAt:800000,weight:1400,weightFuel:2000,burnTime:25,dragCoeff:0.5,stability:0},
-  {name:"Fuel_2",pieceType:"FuelPiece",screenNameX:"Fuel Tank (med)",cardType:"ORBITER",earnedAt:1000000,weight:2000,weightFuel:2600,burnTime:105,dragCoeff:0.5,stability:0},
-  {name:"Fuel_3",pieceType:"FuelPiece",screenNameX:"Fuel Tank (lrg)",cardType:"ORBITER",earnedAt:2000000,weight:2400,weightFuel:3000,burnTime:200,dragCoeff:0.5,stability:0},
-  {name:"SRB_1",pieceType:"SRBPiece",screenNameX:"SRB",cardType:"ORBITER",earnedAt:800000,thrust:200000,burnTime:20,weight:1500,weightFuel:700,stability:0},
-  {name:"SRB_2",pieceType:"SRBPiece",screenNameX:"Firecracker Booster",cardType:"ORBITER",earnedAt:2850000,thrust:90000,burnTime:20,weight:100,weightFuel:300,stability:0,zany:1},
-  {name:"SRB_3",pieceType:"SRBPiece",screenNameX:"Soda Pop Booster",cardType:"ORBITER",earnedAt:2550000,thrust:90000,burnTime:20,weight:100,weightFuel:300,stability:0,zany:1},
-  {name:"Orbiter_1",pieceType:"OrbiterPiece",screenNameX:"Orbiter",cardType:"ORBITER",earnedAt:800000,thrust:50000,burnTime:25,weight:900,weightFuel:300,stability:0},
-  {name:"Orbiter_2",pieceType:"OrbiterPiece",screenNameX:"School Bus",cardType:"ORBITER",earnedAt:1950000,thrust:1950,burnTime:30,weight:400,weightFuel:600,stability:0,zany:1},
-  {name:"Orbiter_3",pieceType:"OrbiterPiece",screenNameX:"Geodesic Orb",cardType:"ORBITER",earnedAt:2500000,thrust:2500,burnTime:30,weight:100,weightFuel:300,stability:0,zany:1},
+  // ══ ENGINES ══
+  // Era 1 — Hobbyist: bare-minimum starter kit, single stage, learn the controls
+  {name:"Engine_2",pieceType:"EnginePiece",screenNameX:"Solid Fuel (sml)",cardType:"THRUST",
+   earnedAt:0,thrust:28000,burnTime:14,weight:180,weightFuel:320,stability:0.1,dragCoeff:0.72,
+   tip:"Your first engine. Light and punchy — get off the ground and learn the ignition timing."},
+  {name:"Engine_6",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (sml)",cardType:"THRUST",
+   earnedAt:3000,thrust:38000,burnTime:20,weight:240,weightFuel:480,stability:0.15,dragCoeff:0.72,
+   tip:"Burns longer than solid fuel. Pair with a fuel tank for your first staged rocket."},
+
+  // Era 2 — Engineer: medium engines, staging becomes possible
+  {name:"Engine_1",pieceType:"EnginePiece",screenNameX:"Solid Fuel (med)",cardType:"THRUST",
+   earnedAt:8000,thrust:80000,burnTime:13,weight:520,weightFuel:1100,stability:0.3,dragCoeff:0.72,
+   tip:"Real power. Stack a fuel tank above this for a two-stage rocket."},
+  {name:"Engine_3",pieceType:"EnginePiece",screenNameX:"Solid Fuel (lrg)",cardType:"THRUST",
+   earnedAt:25000,thrust:140000,burnTime:11,weight:900,weightFuel:2200,stability:0.4,dragCoeff:0.72,
+   tip:"Heavy lifter. Burns fast — stage immediately at burnout."},
+  {name:"Engine_5",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (med)",cardType:"THRUST",
+   earnedAt:40000,thrust:55000,burnTime:22,weight:380,weightFuel:820,stability:0.2,dragCoeff:0.72,
+   tip:"Long burn time makes this ideal as an upper stage engine."},
+
+  // Era 2 → 3 transition: large liquid, hybrids
+  {name:"Engine_7",pieceType:"EnginePiece",screenNameX:"Liquid Fuel (lrg)",cardType:"THRUST",
+   earnedAt:120000,thrust:260000,burnTime:14,weight:1600,weightFuel:3800,stability:0.4,dragCoeff:0.72,
+   tip:"Orbital-class thrust. Needs a large fuel tank to reach its potential."},
+  {name:"Engine_10",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (sml)",cardType:"THRUST",
+   earnedAt:180000,thrust:42000,burnTime:20,weight:280,weightFuel:420,stability:0.15,dragCoeff:0.72,
+   tip:"Hybrid engines are efficient at altitude — great upper stage choice."},
+  {name:"Engine_9",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (med)",cardType:"THRUST",
+   earnedAt:320000,thrust:95000,burnTime:18,weight:560,weightFuel:780,stability:0.25,dragCoeff:0.72,
+   tip:"Balanced thrust and burn time. Excellent for middle stages."},
+  {name:"Engine_8",pieceType:"EnginePiece",screenNameX:"Hybrid Fuel (lrg)",cardType:"THRUST",
+   earnedAt:500000,thrust:210000,burnTime:15,weight:1400,weightFuel:1600,stability:0.4,dragCoeff:0.72,
+   tip:"High-energy hybrid. Pairs beautifully with SRBs for a first stage."},
+
+  // Era 3 — Mission Architect: exotic and deep-space engines
+  {name:"Engine_4",pieceType:"EnginePiece",screenNameX:"Magnetoplasma",cardType:"THRUST",
+   earnedAt:900000,thrust:32000,burnTime:40,weight:350,weightFuel:200,stability:0.2,dragCoeff:0.72,
+   tip:"Incredible specific impulse. Tiny thrust but burns forever — ideal upper stage in vacuum."},
+  {name:"Engine_12",pieceType:"EnginePiece",screenNameX:"Puppy Power",cardType:"THRUST",
+   earnedAt:1400000,thrust:22000,burnTime:25,weight:120,weightFuel:280,stability:0,dragCoeff:0.72,zany:1,
+   tip:"Unconventional propulsion. Lightweight but surprisingly capable."},
+  {name:"Engine_11",pieceType:"EnginePiece",screenNameX:"Cow Power",cardType:"THRUST",
+   earnedAt:1800000,thrust:34000,burnTime:20,weight:280,weightFuel:380,stability:0.2,dragCoeff:0.72,zany:1,
+   tip:"Methane-adjacent. Don't ask questions."},
+
+  // Era 4 — Cosmetic/prestige engines (skins with same stats as equivalents)
+  {name:"Engine_13",pieceType:"EnginePiece",screenNameX:"Circus Clown (lrg)",cardType:"THRUST",
+   earnedAt:2500000,thrust:210000,burnTime:15,weight:1400,weightFuel:1600,stability:0.4,dragCoeff:0.72,zany:1,
+   tip:"Hybrid-class performance in clown colors. A reward for persistence."},
+  {name:"Engine_14",pieceType:"EnginePiece",screenNameX:"Circus Clown (med)",cardType:"THRUST",
+   earnedAt:3000000,thrust:95000,burnTime:18,weight:560,weightFuel:780,stability:0.25,dragCoeff:0.72,zany:1},
+  {name:"Engine_15",pieceType:"EnginePiece",screenNameX:"Circus Clown (sml)",cardType:"THRUST",
+   earnedAt:3500000,thrust:42000,burnTime:20,weight:280,weightFuel:420,stability:0.15,dragCoeff:0.72,zany:1},
+  {name:"Engine_16",pieceType:"EnginePiece",screenNameX:"Hot Rod (sml)",cardType:"THRUST",
+   earnedAt:4000000,thrust:42000,burnTime:20,weight:280,weightFuel:420,stability:0.15,dragCoeff:0.72,zany:1},
+  {name:"Engine_17",pieceType:"EnginePiece",screenNameX:"Hot Rod (med)",cardType:"THRUST",
+   earnedAt:5000000,thrust:95000,burnTime:18,weight:560,weightFuel:780,stability:0.25,dragCoeff:0.72,zany:1},
+  {name:"Engine_18",pieceType:"EnginePiece",screenNameX:"Hot Rod (lrg)",cardType:"THRUST",
+   earnedAt:6000000,thrust:210000,burnTime:15,weight:1400,weightFuel:1600,stability:0.4,dragCoeff:0.72,zany:1},
+  {name:"Engine_19",pieceType:"EnginePiece",screenNameX:"Bejeweled (med)",cardType:"THRUST",
+   earnedAt:8000000,thrust:95000,burnTime:18,weight:560,weightFuel:780,stability:0.25,dragCoeff:0.72,zany:1},
+  {name:"Engine_20",pieceType:"EnginePiece",screenNameX:"Bejeweled (lrg)",cardType:"THRUST",
+   earnedAt:10000000,thrust:210000,burnTime:15,weight:1400,weightFuel:1600,stability:0.4,dragCoeff:0.72,zany:1},
+  {name:"Engine_21",pieceType:"EnginePiece",screenNameX:"Bejeweled (sml)",cardType:"THRUST",
+   earnedAt:15000000,thrust:42000,burnTime:20,weight:280,weightFuel:420,stability:0.15,dragCoeff:0.72,zany:1},
+
+  // ══ FINS ══
+  // Start with two options immediately, earn better ones as they go
+  {name:"Fin_3",pieceType:"FinPiece",screenNameX:"Delta Fin (sml)",cardType:"STABILIZER",
+   earnedAt:0,weight:8,stability:0.6,
+   tip:"The simplest stabilizer. Two of these will keep a small rocket straight."},
+  {name:"Fin_1",pieceType:"FinPiece",screenNameX:"Delta Fin (med)",cardType:"STABILIZER",
+   earnedAt:0,weight:12,stability:1.0,
+   tip:"Standard rocket fin. Good starting choice for most builds."},
+  {name:"Fin_2",pieceType:"FinPiece",screenNameX:"Swept Fin (wide)",cardType:"STABILIZER",
+   earnedAt:5000,weight:14,stability:1.3,
+   tip:"Wide chord gives great stability at lower altitudes."},
+  {name:"Fin_7",pieceType:"FinPiece",screenNameX:"Delta Fin (lrg)",cardType:"STABILIZER",
+   earnedAt:15000,weight:18,stability:1.6,
+   tip:"More fin area means more stability — important with heavy upper stages."},
+  {name:"Fin_4",pieceType:"FinPiece",screenNameX:"Trapezoidal Fin",cardType:"STABILIZER",
+   earnedAt:35000,weight:22,stability:1.8,
+   tip:"Classic trapezoidal profile. Used on sounding rockets worldwide."},
+  {name:"Fin_5",pieceType:"FinPiece",screenNameX:"Strake Fin",cardType:"STABILIZER",
+   earnedAt:80000,weight:16,stability:2.0,
+   tip:"Low-drag strake profile. Best aero performance of any standard fin."},
+  {name:"Wing_1",pieceType:"FinPiece",screenNameX:"Dragon Wing",cardType:"STABILIZER",
+   earnedAt:300000,weight:20,stability:2.2,zany:1,
+   tip:"Fantastical wing design. Surprisingly aerodynamically sound."},
+  {name:"Fin_6",pieceType:"FinPiece",screenNameX:"Shark Fin",cardType:"STABILIZER",
+   earnedAt:700000,weight:28,stability:3.0,zany:1,
+   tip:"Maximum stability. These fins will keep anything flying straight."},
+
+  // ══ NOSE CONES ══
+  // Two starter options, then meaningful unlocks at key altitudes
+  {name:"Nose_6",pieceType:"NosePiece",screenNameX:"Elliptical Nose (med)",cardType:"NOSE",
+   earnedAt:0,weight:12,stability:0,dragCoeff:0.52,
+   tip:"A good all-around nose cone. Reduces drag significantly over no cone at all."},
+  {name:"Nose_10",pieceType:"NosePiece",screenNameX:"Ogive Nose (lrg)",cardType:"NOSE",
+   earnedAt:0,weight:18,stability:0,dragCoeff:0.48,
+   tip:"Ogive profile excels at high speed. The pointed shape cuts through air efficiently."},
+  {name:"Nose_2",pieceType:"NosePiece",screenNameX:"Clown Nose",cardType:"NOSE",
+   earnedAt:2000,weight:5,stability:0.5,dragCoeff:0.62,zany:1,
+   tip:"Terrible aerodynamics. Hilarious results."},
+  {name:"Nose_8",pieceType:"NosePiece",screenNameX:"Ogive Nose (sml)",cardType:"NOSE",
+   earnedAt:6000,weight:6,stability:0,dragCoeff:0.48,
+   tip:"Lightweight ogive. Great for small rockets where mass matters."},
+  {name:"Nose_3",pieceType:"NosePiece",screenNameX:"Elliptical Nose (sml)",cardType:"NOSE",
+   earnedAt:12000,weight:8,stability:0,dragCoeff:0.52,
+   tip:"Small and efficient. Ideal above a fuel tank."},
+  {name:"Nose_9",pieceType:"NosePiece",screenNameX:"Ogive Nose (med)",cardType:"NOSE",
+   earnedAt:30000,weight:10,stability:0,dragCoeff:0.46,
+   tip:"The best drag coefficient in the medium class."},
+  {name:"Nose_7",pieceType:"NosePiece",screenNameX:"Elliptical Nose (lrg)",cardType:"NOSE",
+   earnedAt:70000,weight:20,stability:0,dragCoeff:0.50,
+   tip:"Wide base fits perfectly on top of large fuel tanks."},
+  {name:"Nose_1",pieceType:"NosePiece",screenNameX:"Conical Nose (sml)",cardType:"NOSE",
+   earnedAt:150000,weight:5,stability:0,dragCoeff:0.58,
+   tip:"Simple cone. Cheap, light, effective."},
+  {name:"Nose_11",pieceType:"NosePiece",screenNameX:"Conical Nose (med)",cardType:"NOSE",
+   earnedAt:300000,weight:10,stability:0,dragCoeff:0.56},
+  {name:"Nose_12",pieceType:"NosePiece",screenNameX:"Conical Nose (lrg)",cardType:"NOSE",
+   earnedAt:600000,weight:16,stability:0,dragCoeff:0.54},
+  {name:"Nose_5",pieceType:"NosePiece",screenNameX:"Schnoz Nose",cardType:"NOSE",
+   earnedAt:1200000,weight:5,stability:0,dragCoeff:0.50,zany:1,
+   tip:"Aerodynamically questionable. Personality-wise, unmatched."},
+  {name:"Nose_13",pieceType:"NosePiece",screenNameX:"Shark Nose",cardType:"NOSE",
+   earnedAt:2000000,weight:22,stability:0,dragCoeff:0.44,zany:1,
+   tip:"Best drag coefficient of any nose cone. Worth the wait."},
+  {name:"Nose_4",pieceType:"NosePiece",screenNameX:"Jewel Nose",cardType:"NOSE",
+   earnedAt:5000000,weight:18,stability:8,dragCoeff:0.46,zany:1,
+   tip:"The crown jewel. Adds stability AND looks incredible."},
+
+  // ══ FUEL TANKS & ORBITERS ══
+  // *** PIVOTAL UNLOCK: small tank at 12km — enables first staged rocket ***
+  {name:"Fuel_1",pieceType:"FuelPiece",screenNameX:"Fuel Tank (sml)",cardType:"ORBITER",
+   earnedAt:12000,weight:180,weightFuel:800,burnTime:0,dragCoeff:0.5,stability:0,
+   tip:"Game changer. Stack this above your engine for your first two-stage rocket. Stage at burnout for maximum altitude."},
+  {name:"Fuel_2",pieceType:"FuelPiece",screenNameX:"Fuel Tank (med)",cardType:"ORBITER",
+   earnedAt:60000,weight:320,weightFuel:1800,burnTime:0,dragCoeff:0.5,stability:0,
+   tip:"Enough fuel for a serious upper stage. Combine with a liquid engine for orbit attempts."},
+  {name:"SRB_1",pieceType:"SRBPiece",screenNameX:"Solid Rocket Booster",cardType:"ORBITER",
+   earnedAt:150000,thrust:240000,burnTime:18,weight:1400,weightFuel:800,stability:0,
+   tip:"Massive first-stage thrust. Stack your main engine above an SRB for a two-stage powerhouse."},
+  {name:"Fuel_3",pieceType:"FuelPiece",screenNameX:"Fuel Tank (lrg)",cardType:"ORBITER",
+   earnedAt:400000,weight:480,weightFuel:3200,burnTime:0,dragCoeff:0.5,stability:0,
+   tip:"The largest fuel tank. Combined with a large liquid engine this is your orbital workhorse."},
+  {name:"Orbiter_1",pieceType:"OrbiterPiece",screenNameX:"Orbiter",cardType:"ORBITER",
+   earnedAt:500000,thrust:48000,burnTime:28,weight:820,weightFuel:280,stability:0,
+   tip:"Your first spacecraft. Reaches orbit under its own power — add it above your launch stack."},
+  {name:"SRB_3",pieceType:"SRBPiece",screenNameX:"Soda Pop Booster",cardType:"ORBITER",
+   earnedAt:1500000,thrust:110000,burnTime:16,weight:180,weightFuel:360,stability:0,zany:1,
+   tip:"Carbonated propulsion. Lightweight and surprisingly powerful."},
+  {name:"SRB_2",pieceType:"SRBPiece",screenNameX:"Firecracker Booster",cardType:"ORBITER",
+   earnedAt:2000000,thrust:130000,burnTime:14,weight:140,weightFuel:300,stability:0,zany:1,
+   tip:"Technically a giant firecracker. Aeronautically a booster."},
+  {name:"Orbiter_2",pieceType:"OrbiterPiece",screenNameX:"School Bus",cardType:"ORBITER",
+   earnedAt:3000000,thrust:2200,burnTime:30,weight:380,weightFuel:560,stability:0,zany:1,
+   tip:"It runs on diesel. It reaches orbit. Don't question it."},
+  {name:"Orbiter_3",pieceType:"OrbiterPiece",screenNameX:"Geodesic Orb",cardType:"ORBITER",
+   earnedAt:5000000,thrust:2800,burnTime:35,weight:120,weightFuel:280,stability:0,zany:1,
+   tip:"A perfectly round spacecraft. Geodesically optimal. Aerodynamically baffling."},
 ];
 
 const CATS = {THRUST:'Engines',STABILIZER:'Fins/Wings',NOSE:'Nose Cones',ORBITER:'Orbiter/Fuel'};
@@ -731,22 +853,81 @@ function partSVG(p, w=44, h=44){
 function artFor(p){ return PART_ART[p.name] || 'assets/img_1678_lossless.png'; }
 
 // ══════════════════════════════════════════════════════════════
+//  CAREER TIERS
+//  Each tier has an altitude threshold, title, icon, and a
+//  "what to try next" coaching tip shown when the tier is reached.
+// ══════════════════════════════════════════════════════════════
+const CAREER_TIERS = [
+  {
+    alt:0, id:'cadet', label:'CADET', icon:'🚀',
+    color:'#6a8faa',
+    tip:'Start simple: engine + nose cone + two fins. Hit IGNITE when the needle is in the green zone.'
+  },
+  {
+    alt:1000, id:'technician', label:'TECHNICIAN', icon:'🔧',
+    color:'#42b4ff',
+    tip:'Nice work! You\'ve broken 1 km. Now try adding a Fuel Tank above your engine — it feeds extra propellant for a longer burn.'
+  },
+  {
+    alt:12000, id:'engineer', label:'ENGINEER', icon:'⚙️',
+    color:'#00e87a',
+    tip:'Fuel tanks are unlocked! Stack one above your engine, then stage right at burnout for a massive altitude boost.'
+  },
+  {
+    alt:50000, id:'pilot', label:'TEST PILOT', icon:'✈️',
+    color:'#f5c400',
+    tip:'You\'ve reached the stratosphere. Try a two-stage build: large engine on the bottom, liquid engine + fuel tank above. Stage timing is everything.'
+  },
+  {
+    alt:100000, id:'astronaut', label:'ASTRONAUT', icon:'👨‍🚀',
+    color:'#ff9d55',
+    tip:'Space! The Kármán line. Now aim for orbit at 400 km — you\'ll need an SRB or large liquid engine plus a full fuel tank and perfect staging.'
+  },
+  {
+    alt:400000, id:'commander', label:'MISSION COMMANDER', icon:'🛰️',
+    color:'#e87aff',
+    tip:'Orbital velocity achieved! The orbiter parts are now within reach. Try building a rocket that can carry a payload to the Moon.'
+  },
+  {
+    alt:10000000, id:'explorer', label:'DEEP SPACE EXPLORER', icon:'🌌',
+    color:'#ff6a00',
+    tip:'10,000 km out. The Moon is visible on the altitude scale. You need every efficiency trick — perfect ignition, clean staging, and the magnetoplasma upper stage.'
+  },
+  {
+    alt:384400000, id:'moonwalker', label:'MOONWALKER', icon:'🌑',
+    color:'#f5c400',
+    tip:'THE MOON. Maximum achievement. You\'ve mastered every system in the game.'
+  },
+];
+
+function currentTier(alt){ 
+  let t = CAREER_TIERS[0];
+  for(const tier of CAREER_TIERS) { if(alt >= tier.alt) t = tier; else break; }
+  return t;
+}
+function nextTier(alt){
+  return CAREER_TIERS.find(t => t.alt > alt) || null;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MILESTONES  (aligned with career tier thresholds)
+// ══════════════════════════════════════════════════════════════
+const MILESTONES = [
+  {alt:1000,       label:'1 km',        icon:'🌄', tier:'technician'},
+  {alt:12000,      label:'12 km',       icon:'✈️', tier:'engineer'},
+  {alt:50000,      label:'50 km',       icon:'🌤️', tier:'pilot'},
+  {alt:100000,     label:'100 km Space',icon:'🌐', tier:'astronaut'},
+  {alt:400000,     label:'Orbit',       icon:'🛰️', tier:'commander'},
+  {alt:10000000,   label:'10,000 km',   icon:'🌌', tier:'explorer'},
+  {alt:384400000,  label:'The Moon',    icon:'🌑', tier:'moonwalker'},
+];
+
+// ══════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════
 let activeTab = 'THRUST';
 let build = {stack:[], fins:[], nose:null};
 let best = Number(localStorage.getItem('slBest')||0);
-let unlockedBest = Number(localStorage.getItem('slUnlockedBest')||best); // tracks what was unlocked at
-
-const MILESTONES = [
-  {alt:1000,      label:'1 km',       icon:'🌄'},
-  {alt:10000,     label:'10 km',      icon:'✈️'},
-  {alt:100000,    label:'100 km',     icon:'🌐'},
-  {alt:400000,    label:'Orbit',      icon:'🛰️'},
-  {alt:10000000,  label:'10,000 km',  icon:'🌙'},
-  {alt:100000000, label:'100,000 km', icon:'⭐'},
-  {alt:384400000, label:'Moon!',      icon:'🌑'},
-];
 let reachedMilestones = JSON.parse(localStorage.getItem('slMilestones')||'[]');
 
 // ══════════════════════════════════════════════════════════════
@@ -757,29 +938,68 @@ function getPart(id){ return ALL_PARTS.find(p=>p.name===id); }
 
 function checkNewUnlocks(prevBest, newBest){
   const newly = ALL_PARTS.filter(p=>(p.earnedAt||0)>prevBest && (p.earnedAt||0)<=newBest);
-  newly.forEach((p,i)=>setTimeout(()=>showUnlockToast(p), i*800));
+  // Check for tier advancement
+  const oldTier = currentTier(prevBest);
+  const newTierObj = currentTier(newBest);
+  if(newTierObj.id !== oldTier.id){
+    setTimeout(()=>showTierToast(newTierObj), 400);
+  }
+  newly.forEach((p,i)=>setTimeout(()=>showUnlockToast(p), 800 + i*900));
   return newly;
+}
+
+function showTierToast(tier){
+  const t = document.createElement('div');
+  t.className = 'unlock-toast tier-toast';
+  t.style.borderColor = tier.color;
+  t.style.boxShadow = `0 8px 30px rgba(0,0,0,.5), 0 0 24px ${tier.color}44`;
+  t.innerHTML = `
+    <div class="unlock-toast-title" style="color:${tier.color}">${tier.icon} RANK UP!</div>
+    <div class="unlock-toast-name">${tier.label}</div>
+    <div class="unlock-toast-sub" style="color:#a0c0d8;margin-top:6px;line-height:1.5;font-size:11px">${tier.tip}</div>
+  `;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 6000);
+  // Update header tier display
+  renderTierBadge();
 }
 
 function showUnlockToast(p){
   const t = document.createElement('div');
-  t.className='unlock-toast';
-  const badge = typeBadge(p);
-  t.innerHTML=`<div class="unlock-toast-title">🔓 PART UNLOCKED</div>
+  t.className = 'unlock-toast';
+  const tipHtml = p.tip ? `<div class="unlock-tip">${p.tip}</div>` : '';
+  t.innerHTML = `
+    <div class="unlock-toast-title">🔓 PART UNLOCKED</div>
     <div class="unlock-toast-name">${p.screenNameX}</div>
-    <div class="unlock-toast-sub">${badge} · Earned at ${formatDistance(p.earnedAt)}</div>`;
+    <div class="unlock-toast-sub">${typeBadge(p)} · Reach ${formatDistance(p.earnedAt)} to unlock</div>
+    ${tipHtml}
+  `;
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(), 3700);
-  // flash the part in the list if visible
+  setTimeout(()=>t.remove(), 5000);
   setTimeout(()=>{
     const el = document.querySelector(`.part-card[data-id="${p.name}"]`);
-    if(el) el.classList.add('newly-unlocked');
-  }, 200);
+    if(el){ el.classList.add('newly-unlocked'); el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  }, 300);
 }
 
 function typeBadge(p){
   const map={EnginePiece:'ENGINE',FuelPiece:'FUEL TANK',SRBPiece:'BOOSTER',OrbiterPiece:'ORBITER',FinPiece:'STABILIZER',NosePiece:'NOSE CONE'};
   return map[p.pieceType]||p.pieceType;
+}
+
+function renderTierBadge(){
+  const tier = currentTier(best);
+  const next = nextTier(best);
+  const el = document.getElementById('tierBadge');
+  if(!el) return;
+  el.innerHTML = `<span style="color:${tier.color}">${tier.icon} ${tier.label}</span>`;
+  if(next){
+    const pct = Math.min(100, ((best - tier.alt) / (next.alt - tier.alt)) * 100);
+    el.innerHTML += `<div class="tier-progress-bar"><div class="tier-progress-fill" style="width:${pct}%;background:${tier.color}"></div></div>
+      <span class="tier-next">next: ${next.icon} ${next.label} at ${formatDistance(next.alt)}</span>`;
+  } else {
+    el.innerHTML += `<span style="color:${tier.color};font-size:10px"> · MAX RANK</span>`;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -827,6 +1047,7 @@ function renderParts(){
         <div class="part-name">${p.screenNameX}</div>
         <div class="part-meta">${statLine}</div>
         <span class="part-type-badge ${badgeCls}">${typeBadge(p)}</span>
+        ${p.tip&&isUnlocked(p)?`<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px;line-height:1.4">${p.tip}</div>`:''}
       </div>
       ${!isUnlocked(p)?`<div class="lock-tag">🔒 ${formatDistance(p.earnedAt)}</div>`:''}
     `;
@@ -861,8 +1082,9 @@ function addPart(id){
 function clearBuild(){ build={stack:[],fins:[],nose:null}; renderAll(); }
 
 function buildSample(){
-  // Engine at bottom → fuel tank above → nose cone on top, fins flanking engine
-  build={nose:'Nose_6', stack:['Engine_1','Fuel_2'], fins:['Fin_1','Fin_1']};
+  // Era 1 starter: small solid engine, basic delta fin pair, elliptical nose
+  // This is achievable on the very first flight — teaches the basics
+  build={nose:'Nose_6', stack:['Engine_2'], fins:['Fin_1','Fin_1']};
   renderAll();
 }
 
@@ -1217,23 +1439,41 @@ function removeAt(slot,i){
 // ══════════════════════════════════════════════════════════════
 function renderMilestones(){
   const grid=document.getElementById('milestoneGrid');
+  const tier = currentTier(best);
+  const next = nextTier(best);
+
   grid.innerHTML=MILESTONES.map(m=>{
-    const reached=reachedMilestones.includes(m.alt)||best>=m.alt;
-    if(reached&&!reachedMilestones.includes(m.alt)) reachedMilestones.push(m.alt);
+    const reached = best >= m.alt;
+    if(reached && !reachedMilestones.includes(m.alt)) reachedMilestones.push(m.alt);
+    const tierObj = CAREER_TIERS.find(t=>t.id===m.tier)||CAREER_TIERS[0];
     return `<div class="ms-chip${reached?' reached':''}">
       <div class="ms-dot"></div>
       <span>${m.icon} ${m.label}</span>
+      <span class="ms-tier" style="${reached?`color:${tierObj.color}`:''}">
+        ${reached?'✓':formatDistance(m.alt)}
+      </span>
     </div>`;
   }).join('');
-  const count=MILESTONES.filter(m=>best>=m.alt).length;
+
+  const count = MILESTONES.filter(m=>best>=m.alt).length;
   document.getElementById('msCount').textContent=`${count} / ${MILESTONES.length}`;
 
-  // Progress fill: log scale to Moon
+  // Progress fill — log scale to Moon
   const pct=Math.min(100,(Math.log10(best+1)/Math.log10(PHYSICS.moonDistance+1))*100);
   document.getElementById('progressFill').style.width=pct+'%';
   document.getElementById('progressPct').textContent=Math.round(pct)+'%';
 
   document.getElementById('bestBadge').textContent='BEST: '+formatDistance(best);
+
+  // Coaching tip in build panel
+  const tipEl = document.getElementById('coachTip');
+  if(tipEl) tipEl.textContent = next
+    ? `${tier.icon} ${tier.label} · Next: ${next.icon} ${next.label} at ${formatDistance(next.alt)} · ${tier.tip}`
+    : `${tier.icon} ${tier.label} · ${tier.tip}`;
+
+  renderTierBadge();
+
+  localStorage.setItem('slMilestones', JSON.stringify(reachedMilestones));
 }
 
 function renderAll(){
@@ -1947,33 +2187,57 @@ function finishFlight(){
   const altitude=launchState.maxAltitude;
   const prevBest=best;
 
-  // Check new unlocks
   if(altitude>best){
     best=altitude;
     localStorage.setItem('slBest',best);
-    const newly=checkNewUnlocks(prevBest,best);
-    // Save milestones
-    MILESTONES.forEach(ms=>{if(best>=ms.alt&&!reachedMilestones.includes(ms.alt))reachedMilestones.push(ms.alt);});
-    localStorage.setItem('slMilestones',JSON.stringify(reachedMilestones));
+    checkNewUnlocks(prevBest,best);
     renderMilestones();
+    renderParts(); // refresh unlock state
   }
 
-  const reached=currentBand().name;
-  let title='Flight Complete',icon='🚀',msg='Build with enough thrust, add fins to the lower engine, and time every stage.';
-  if(altitude<5&&m.twr<1){title='Too Heavy';icon='⚠️';msg='T/W below 1.0. Add a stronger engine or reduce mass.';}
-  else if(m.stability<35){title='Unstable Flight';icon='💥';msg='Add at least two fins to the lower engine.';}
-  else if(m.aero<45){title='High Drag';icon='🌬️';msg='Add a nose cone to cut drag.';}
-  else if(launchState.stages.length>1&&launchState.coastTime>.9){title='Late Staging';icon='⏱️';msg='You waited too long between stages. Stage immediately at burnout.';}
-  else if(altitude>=PHYSICS.moonDistance){title='MOON REACHED!';icon='🌑';msg='Mission complete. Incredible build.';}
-  else if(altitude>=PHYSICS.orbitAltitude){title='ORBIT REACHED!';icon='🛰️';msg='Mission success. Strong staging and stability.';}
-  else if(altitude>100000){title='Space Reached';icon='🌌';msg='Strong flight. Add power or improve staging to reach orbit.';}
-  else if(altitude>45000){title='Near Space';icon='🌐';msg='Great flight. Add more thrust for space.';}
+  // Result message — tier-aware coaching
+  const tier = currentTier(altitude);
+  const next = nextTier(altitude);
+  let title='Flight Complete', icon='🚀';
+  let msg = next
+    ? `Next goal: ${next.icon} ${next.label} at ${formatDistance(next.alt)}. ${tier.tip}`
+    : `${tier.tip}`;
+
+  if(altitude<20&&m.twr<1){
+    title='Too Heavy to Lift'; icon='⚠️';
+    msg='Your thrust-to-weight ratio is below 1.0. Try a lighter nose cone, or a more powerful engine.';
+  } else if(m.stability<30){
+    title='Unstable Flight'; icon='💥';
+    msg='Add at least two fins to stabilize. Fins go on the body tube, not the nozzle.';
+  } else if(!build.nose){
+    title='No Nose Cone'; icon='🌬️';
+    msg='A nose cone dramatically reduces drag. Add one from the Nose Cones tab.';
+  } else if(launchState.stages.length>1&&launchState.coastTime>1.2){
+    title='Late Staging'; icon='⏱️';
+    msg='Stage RIGHT at burnout — you lost significant velocity waiting. Watch the burn bar and hit Next Stage the moment it empties.';
+  } else if(altitude>=PHYSICS.moonDistance){
+    title='THE MOON!'; icon='🌑';
+    msg='You reached the Moon. Maximum achievement unlocked. You have mastered every system.';
+  } else if(altitude>=PHYSICS.orbitAltitude){
+    title='ORBIT ACHIEVED!'; icon='🛰️';
+    msg='Orbital altitude reached! Try adding an orbiter on top of your stack.';
+  } else if(altitude>=100000){
+    title='Space!'; icon='🌌';
+    msg=next?`The Kármán line! Next: ${next.icon} ${next.label}. You need more staged power for orbit.`:'';
+  } else if(altitude>=12000&&!build.stack.some(id=>{const p=getPart(id);return p&&p.pieceType==='FuelPiece';})){ 
+    title='Add a Fuel Tank!'; icon='💡';
+    msg='You\'ve unlocked the small fuel tank! Stack it above your engine — it feeds extra propellant for a massive altitude boost.';
+  }
 
   const isNewBest=altitude>prevBest;
   const newBestTag=isNewBest?` <span style="color:var(--green)">★ NEW BEST!</span>`:'';
+  const reached=currentBand().name;
 
   drawScene(250,0,false,true);
-  setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}</div></div>`);
+  setResult(`<div class="result-icon">${icon}</div><div>
+    <div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div>
+    <div class="note">${tier.icon} ${tier.label} · ${reached} · Score ${launchState.score} · ${msg}</div>
+  </div>`);
   updateHUD();
   renderStats();
 }
@@ -2002,6 +2266,7 @@ document.getElementById('closeBtn').onclick=()=>{
 initTabs();
 renderParts();
 renderMilestones();
+renderTierBadge();
 buildSample();
 
 </script>
