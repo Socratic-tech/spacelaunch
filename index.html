@@ -192,7 +192,7 @@ header{
 .seg img{width:100%;height:100%;object-fit:fill;display:block;image-rendering:auto}
 
 /* ─── FINS ─── */
-.fin-el{position:absolute;z-index:12;overflow:visible;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
+.fin-el{position:absolute;z-index:8;overflow:visible;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3))}
 .fin-el img{width:100%;height:100%;object-fit:contain;display:block;image-rendering:auto}
 
 /* ─── STATS PANEL ─── */
@@ -1109,28 +1109,40 @@ function buildVisualLayout(parts, dimFn, cowlH, overlap=4){
   return {segments, cowls, totalHeight:y};
 }
 
+function isFinBodySegment(p){
+  // Nose cones should never be used as a fin anchor. They make the fins ride
+  // too high and visually cut across the nose. Use tanks/orbiters/SRBs when
+  // present; otherwise use the engine shoulder/cowling area.
+  return p && ['FuelPiece','SRBPiece','OrbiterPiece'].includes(p.pieceType);
+}
+
 function lowestFinAnchor(layout){
   const engine = layout.segments.find(s => s.p.pieceType === 'EnginePiece') || layout.segments[0];
   if(!engine) return null;
 
   const cowl = layout.cowls.find(c => c.afterIndex === engine.vi);
-  const firstBody = layout.segments.find(s => s.vi > engine.vi && s.p.pieceType !== 'EnginePiece');
+  const firstBody = layout.segments.find(s => s.vi > engine.vi && isFinBodySegment(s.p));
 
   if(cowl){
     const bodyW = firstBody ? firstBody.w : cowl.bodyW;
+    const hasRealBody = !!firstBody;
     return {
       centerX: 0,
       width: Math.max(engine.w * 0.56, Math.min(bodyW, cowl.w) * 0.88),
-      bottom: cowl.y + cowl.h * 0.18,
-      top: (firstBody ? firstBody.y + Math.min(firstBody.h * 0.22, 24) : cowl.top)
+      // If there is only an engine + nose, keep fins down on the engine/cowling.
+      // If there is a tank/body tube, let them climb slightly onto the lower tube.
+      bottom: hasRealBody ? cowl.y + cowl.h * 0.45 : engine.y + engine.h * 0.18,
+      top: hasRealBody
+        ? firstBody.y + Math.min(firstBody.h * 0.34, 34)
+        : cowl.top - cowl.h * 0.08
     };
   }
 
   return {
     centerX: 0,
     width: engine.w * 0.72,
-    bottom: engine.y + engine.h * 0.32,
-    top: engine.y + engine.h * 0.92
+    bottom: engine.y + engine.h * 0.16,
+    top: engine.y + engine.h * 0.74
   };
 }
 
@@ -1481,17 +1493,13 @@ function drawCanvasRocket(burning){
   const COWL_H = 20;
   const layout = buildVisualLayout(parts, canvasPieceDims, COWL_H, 3);
 
-  layout.segments.forEach(({p, y, h, w}) => {
-    const fuelRatio = fuelRatioForPart(p.name);
-    drawSpriteOrVector(p, 0, -y, w, h, false, fuelRatio);
-  });
-
-  layout.cowls.forEach(cowl => {
-    drawCowlingCanvas(0, -cowl.y, cowl.engineW, cowl.bodyW, cowl.h);
-  });
-
-  // Use the same anchor logic as the editor so the launch rocket matches the builder.
-  const showFins = !launchState || launchState.current === 0;
+  // Draw fins first so the rocket body/cowling masks the attachment edge.
+  // This matches the editor layering and avoids fins visually slicing through
+  // the nose/body tube.
+  // Show fins while the rocket is sitting on the pad before ignition (current === -1)
+  // and during the first-stage burn (current === 0). Hide them only after the
+  // fin-bearing lower stage has separated during later stages.
+  const showFins = !launchState || (launchState.current ?? -1) <= 0;
   const anchor = lowestFinAnchor(layout);
   if (showFins && build.fins.length && anchor) {
     build.fins.map(getPart).filter(Boolean).slice(0, 4).forEach((part, i) => {
@@ -1503,6 +1511,15 @@ function drawCanvasRocket(burning){
       drawSpriteOrVector(part, place.x, -place.bottom, fw, fh, !isLeft, 1);
     });
   }
+
+  layout.segments.forEach(({p, y, h, w}) => {
+    const fuelRatio = fuelRatioForPart(p.name);
+    drawSpriteOrVector(p, 0, -y, w, h, false, fuelRatio);
+  });
+
+  layout.cowls.forEach(cowl => {
+    drawCowlingCanvas(0, -cowl.y, cowl.engineW, cowl.bodyW, cowl.h);
+  });
 
   // Engine flame below the rocket
   if (burning) {
