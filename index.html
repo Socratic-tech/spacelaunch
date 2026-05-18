@@ -250,6 +250,13 @@ header{
   font-family:var(--font-hud);letter-spacing:.04em;
 }
 .build-chip .rm:hover{background:rgba(255,63,90,.3)}
+.build-chip.reorderable{cursor:grab;user-select:none}
+.build-chip.reorderable:active{cursor:grabbing}
+.build-chip.dragging{opacity:.45;border-color:var(--accent);box-shadow:0 0 14px rgba(245,196,0,.22)}
+.build-chip.drop-before{box-shadow:0 -3px 0 var(--accent)}
+.build-chip.drop-after{box-shadow:0 3px 0 var(--accent)}
+.drag-handle{color:var(--accent);opacity:.75;margin-right:7px;font-size:13px;vertical-align:-1px}
+.build-list.drag-ready{outline:1px dashed rgba(245,196,0,.35);outline-offset:4px;border-radius:6px}
 
 /* ─── BUTTONS ─── */
 btn,button{font-family:var(--font-hud);font-size:11px;font-weight:700;letter-spacing:.06em;border:0;border-radius:7px;padding:9px 14px;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s}
@@ -1035,7 +1042,11 @@ const SPRITE_DIMS = {
   NosePiece: {nw:49, nh:80},
 };
 
-function spriteDims(p) {
+function spriteDims(p, vi=0) {
+  // Only the lowest visible engine should show a full nozzle bell. Upper-stage
+  // engines are tucked inside an interstage shroud before separation, so they
+  // render as compact body modules instead of exposed cones with fake air gaps.
+  if(p.pieceType === 'EnginePiece' && vi > 0) return { w: ROCKET_BODY_W, h: 38 };
   const named = SPRITE_DIMS[p.name] || SPRITE_DIMS[p.pieceType] || {nw:76,nh:69};
   // Scale so rendered width = ROCKET_BODY_W
   const scale = ROCKET_BODY_W / named.nw;
@@ -1106,18 +1117,46 @@ function cowlingSVG(engineW, bodyW, h) {
   </svg>`;
 }
 
+
+function shroudedEngineSVG(p, w, h) {
+  let accentColor='#cc1f28', bodyA='#8a9298', bodyB='#f0f4f0', bodyC='#6a7278';
+  if(p.screenNameX&&p.screenNameX.includes('Liquid')){accentColor='#1a6abf';bodyA='#6f9fc6';bodyB='#d7edff';bodyC='#365a78';}
+  else if(p.screenNameX&&p.screenNameX.includes('Hybrid')){accentColor='#3a8828';bodyA='#6da460';bodyB='#def2d3';bodyC='#365d30';}
+  else if(p.screenNameX&&p.screenNameX.includes('Magneto')){accentColor='#6a28cc';bodyA='#9a7dd6';bodyB='#ece3ff';bodyC='#4b3282';}
+  else if(p.zany){accentColor='#cc7a10';bodyA='#e0a850';bodyB='#ffe8b8';bodyC='#805010';}
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="shroud${p.name}" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%" stop-color="${bodyA}"/>
+        <stop offset="22%" stop-color="${bodyB}"/>
+        <stop offset="58%" stop-color="#c4c9c9"/>
+        <stop offset="82%" stop-color="#eef3f3"/>
+        <stop offset="100%" stop-color="${bodyC}"/>
+      </linearGradient>
+    </defs>
+    <rect x="3" y="1" width="${w-6}" height="${h-2}" rx="5" fill="url(#shroud${p.name})" stroke="#1a1f24" stroke-width="1.5"/>
+    <rect x="5" y="${h*.58}" width="${w-10}" height="${Math.max(4,h*.13)}" fill="${accentColor}" opacity=".9"/>
+    <rect x="${w*.26}" y="${h-5}" width="${w*.48}" height="4" rx="2" fill="#2a3137" opacity=".55"/>
+    <text x="${w/2}" y="${Math.max(11,h*.36)}" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="rgba(20,28,34,.65)">ENGINE INSIDE</text>
+  </svg>`;
+}
+
 function buildVisualLayout(parts, dimFn, cowlH, overlap=4){
   let y = 0;
   const segments = [];
   const cowls = [];
 
   parts.forEach((p, vi) => {
-    const {w, h} = dimFn(p);
-    segments.push({p, vi, y, h, w, top:y+h});
+    const shroudedEngine = p.pieceType === 'EnginePiece' && vi > 0;
+    const {w, h} = dimFn(p, vi);
+    segments.push({p, vi, y, h, w, top:y+h, shroudedEngine});
 
     const nextPart = parts[vi + 1];
-    if (p.pieceType === 'EnginePiece' && nextPart) {
-      const nextDims = dimFn(nextPart);
+    // A cowling is only needed for the exposed engine at the bottom of the
+    // currently visible assembly. Upper-stage engines are inside interstage
+    // shrouds until their lower stage separates.
+    if (p.pieceType === 'EnginePiece' && !shroudedEngine && nextPart) {
+      const nextDims = dimFn(nextPart, vi + 1);
       const cowlW = Math.max(w, nextDims.w);
       const cowlBottom = y + h - overlap;
       cowls.push({afterIndex:vi, y:cowlBottom, h:cowlH, w:cowlW, top:cowlBottom+cowlH, engineW:w, bodyW:nextDims.w});
@@ -1138,7 +1177,9 @@ function isFinBodySegment(p){
 }
 
 function lowestFinAnchor(layout){
-  const engine = layout.segments.find(s => s.p.pieceType === 'EnginePiece') || layout.segments[0];
+  const engine = layout.segments.find(s => s.p.pieceType === 'EnginePiece' && !s.shroudedEngine)
+    || layout.segments.find(s => s.p.pieceType === 'EnginePiece')
+    || layout.segments[0];
   if(!engine) return null;
 
   const cowl = layout.cowls.find(c => c.afterIndex === engine.vi);
@@ -1188,11 +1229,11 @@ function renderRocket(){
   const COWL_H = 28;
   const layout = buildVisualLayout(segs, spriteDims, COWL_H, 4);
 
-  layout.segments.forEach(({p, y, h, w}) => {
+  layout.segments.forEach(({p, y, h, w, shroudedEngine}) => {
     const d = document.createElement('div');
     d.className = 'seg';
     d.style.cssText = `width:${w}px;height:${h}px;bottom:${y}px;left:50%;margin-left:${-w/2}px;`;
-    d.innerHTML = spriteImg(p, w, h);
+    d.innerHTML = shroudedEngine ? shroudedEngineSVG(p, w, h) : spriteImg(p, w, h);
     mount.appendChild(d);
   });
 
@@ -1275,19 +1316,120 @@ function renderStats(){
 // ══════════════════════════════════════════════════════════════
 //  BUILD LIST
 // ══════════════════════════════════════════════════════════════
+function stackSlotLabel(p){
+  if(!p) return 'BODY';
+  if(p.pieceType==='EnginePiece') return 'ENGINE';
+  if(p.pieceType==='FuelPiece') return 'FUEL';
+  if(p.pieceType==='SRBPiece') return 'BOOSTER';
+  if(p.pieceType==='OrbiterPiece') return 'ORBITER';
+  return 'BODY';
+}
+
+function insertPartAt(id, stackIndex=build.stack.length){
+  const p=getPart(id); if(!p||!isUnlocked(p))return;
+  if(p.pieceType==='NosePiece'){ build.nose=id; }
+  else if(p.pieceType==='FinPiece'){
+    if(build.fins.length>=4) build.fins.shift();
+    build.fins.push(id);
+  } else {
+    const idx=Math.max(0,Math.min(build.stack.length,Number(stackIndex)||0));
+    build.stack.splice(idx,0,id);
+  }
+  renderAll();
+}
+
+function reorderStack(fromIndex, insertIndex){
+  fromIndex=Number(fromIndex); insertIndex=Number(insertIndex);
+  if(!Number.isInteger(fromIndex)||!Number.isInteger(insertIndex)) return;
+  if(fromIndex<0||fromIndex>=build.stack.length) return;
+  insertIndex=Math.max(0,Math.min(build.stack.length,insertIndex));
+  const [moved]=build.stack.splice(fromIndex,1);
+  if(fromIndex<insertIndex) insertIndex--;
+  build.stack.splice(insertIndex,0,moved);
+  renderAll();
+}
+
+function clearBuildDragClasses(el){
+  el.querySelectorAll('.build-chip').forEach(c=>c.classList.remove('dragging','drop-before','drop-after'));
+  el.classList.remove('drag-ready');
+}
+
 function renderList(){
-  const rows=[];
-  if(build.nose) rows.push(['NOSE',build.nose]);
-  build.stack.forEach(id=>rows.push(['BODY',id]));
-  build.fins.forEach(id=>rows.push(['FIN',id]));
   const el=document.getElementById('buildList');
-  el.innerHTML=rows.length?rows.map(([slot,id],i)=>{
+  const rows=[];
+  if(build.nose) rows.push({kind:'nose',slot:'NOSE',id:build.nose,index:0,draggable:false});
+  build.stack.forEach((id,stackIndex)=>{
     const p=getPart(id);
-    return `<div class="build-chip"><span><b>${slot}</b> ${p?p.screenNameX:'?'}</span><button class="rm" onclick="removeAt('${slot}',${i})">✕</button></div>`;
-  }).join(''):'<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">No parts. Click parts to add.</p>';
+    rows.push({kind:'stack',slot:stackSlotLabel(p),id,index:stackIndex,stackIndex,draggable:true});
+  });
+  build.fins.forEach((id,finIndex)=>rows.push({kind:'fin',slot:'FIN',id,index:finIndex,draggable:false}));
+
+  if(!rows.length){
+    el.innerHTML='<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">No parts. Click parts to add.</p>';
+    return;
+  }
+
+  el.innerHTML=rows.map(row=>{
+    const p=getPart(row.id);
+    const dragAttrs=row.draggable ? ` draggable="true" data-stack-index="${row.stackIndex}"` : '';
+    const cls='build-chip'+(row.draggable?' reorderable':'');
+    const handle=row.draggable?'<span class="drag-handle">↕</span>':'';
+    return `<div class="${cls}" data-kind="${row.kind}" data-index="${row.index}"${dragAttrs}>
+      <span>${handle}<b>${row.slot}</b> ${p?p.screenNameX:'?'}</span>
+      <button class="rm" onclick="removeBuildItem('${row.kind}',${row.index})">✕</button>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.build-chip.reorderable').forEach(chip=>{
+    chip.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/build-stack-index',chip.dataset.stackIndex);
+      e.dataTransfer.effectAllowed='move';
+      chip.classList.add('dragging');
+      el.classList.add('drag-ready');
+    });
+    chip.addEventListener('dragend',()=>clearBuildDragClasses(el));
+    chip.addEventListener('dragover',e=>{
+      e.preventDefault();
+      const rect=chip.getBoundingClientRect();
+      const after=e.clientY>rect.top+rect.height/2;
+      chip.classList.toggle('drop-before',!after);
+      chip.classList.toggle('drop-after',after);
+    });
+    chip.addEventListener('dragleave',()=>chip.classList.remove('drop-before','drop-after'));
+    chip.addEventListener('drop',e=>{
+      e.preventDefault(); e.stopPropagation();
+      const rect=chip.getBoundingClientRect();
+      const after=e.clientY>rect.top+rect.height/2;
+      const target=Number(chip.dataset.stackIndex)+(after?1:0);
+      const from=e.dataTransfer.getData('text/build-stack-index');
+      const partId=e.dataTransfer.getData('text/plain');
+      clearBuildDragClasses(el);
+      if(from!=='' && from!=null) reorderStack(Number(from),target);
+      else if(partId) insertPartAt(partId,target);
+    });
+  });
+
+  el.ondragover=e=>{ e.preventDefault(); el.classList.add('drag-ready'); };
+  el.ondragleave=()=>el.classList.remove('drag-ready');
+  el.ondrop=e=>{
+    e.preventDefault();
+    const from=e.dataTransfer.getData('text/build-stack-index');
+    const partId=e.dataTransfer.getData('text/plain');
+    clearBuildDragClasses(el);
+    if(from!=='' && from!=null) reorderStack(Number(from),build.stack.length);
+    else if(partId) insertPartAt(partId,build.stack.length);
+  };
+}
+
+function removeBuildItem(kind,i){
+  if(kind==='nose') build.nose=null;
+  else if(kind==='fin') build.fins.splice(i,1);
+  else if(kind==='stack') build.stack.splice(i,1);
+  renderAll();
 }
 
 function removeAt(slot,i){
+  // Backward-compatible wrapper for any older inline handlers.
   if(slot==='NOSE') build.nose=null;
   else if(slot==='FIN'){
     const fi=i-(build.nose?1:0)-build.stack.length;
@@ -1474,8 +1616,11 @@ function getSprite(p) {
   return spriteCache.get(src);
 }
 
-function canvasPieceDims(p) {
-  // Use real sprite aspect ratios, scaled to CANVAS_ROCKET_W
+function canvasPieceDims(p, vi=0) {
+  // Use real sprite aspect ratios, scaled to CANVAS_ROCKET_W. Upper-stage
+  // engines render as compact interstage shrouds until they become the active
+  // bottom engine after separation.
+  if(p.pieceType === 'EnginePiece' && vi > 0) return { w: CANVAS_ROCKET_W, h: 30 };
   const d = SPRITE_DIMS[p.name] || SPRITE_DIMS[p.pieceType] || {nw:76,nh:69};
   const scale = CANVAS_ROCKET_W / d.nw;
   return { w: CANVAS_ROCKET_W, h: Math.round(d.nh * scale) };
@@ -1527,6 +1672,24 @@ function drawCowlingCanvas(x, y, botW, topW, h) {
   // Red stripe
   ctx.fillStyle = 'rgba(204,31,40,0.9)';
   ctx.fillRect(x - tW/2 + 1, y - h + h*0.18, tW - 2, h*0.14);
+}
+
+
+function drawShroudedEngineCanvas(part, x, y, w, h) {
+  ctx.save();
+  ctx.translate(x, y);
+  let accent='#cc1f28', a='#8a9298', b='#f0f4f0', c='#6a7278';
+  if(part.screenNameX&&part.screenNameX.includes('Liquid')){accent='#1a6abf';a='#6f9fc6';b='#d7edff';c='#365a78';}
+  else if(part.screenNameX&&part.screenNameX.includes('Hybrid')){accent='#3a8828';a='#6da460';b='#def2d3';c='#365d30';}
+  else if(part.screenNameX&&part.screenNameX.includes('Magneto')){accent='#6a28cc';a='#9a7dd6';b='#ece3ff';c='#4b3282';}
+  else if(part.zany){accent='#cc7a10';a='#e0a850';b='#ffe8b8';c='#805010';}
+  const g=ctx.createLinearGradient(-w/2,0,w/2,0);
+  g.addColorStop(0,a);g.addColorStop(.22,b);g.addColorStop(.58,'#c4c9c9');g.addColorStop(.82,'#eef3f3');g.addColorStop(1,c);
+  ctx.fillStyle=g; ctx.strokeStyle='#1a1f24'; ctx.lineWidth=1.5;
+  rr(-w/2+2,-h,w-4,h-2,5);ctx.fill();ctx.stroke();
+  ctx.fillStyle=accent;ctx.globalAlpha=.9;ctx.fillRect(-w/2+4,-h+h*.58,w-8,Math.max(3,h*.13));ctx.globalAlpha=1;
+  ctx.fillStyle='rgba(42,49,55,.55)';rr(-w*.24,-5,w*.48,4,2);ctx.fill();
+  ctx.restore();
 }
 
 function drawCanvasSeparatorBand(x, y, w, label='', alpha=1){
@@ -1587,9 +1750,10 @@ function drawRocketAssembly(parts, fins=[], burning=false, showFins=true, showSe
     });
   }
 
-  layout.segments.forEach(({p, y, h, w}) => {
+  layout.segments.forEach(({p, y, h, w, shroudedEngine}) => {
     const fuelRatio = fuelRatioForPart(p.name);
-    drawSpriteOrVector(p, 0, -y, w, h, false, fuelRatio);
+    if(shroudedEngine) drawShroudedEngineCanvas(p, 0, -y, w, h);
+    else drawSpriteOrVector(p, 0, -y, w, h, false, fuelRatio);
   });
 
   layout.cowls.forEach(cowl => {
