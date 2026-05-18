@@ -73,7 +73,7 @@ header{
 .panel-body{padding:12px}
 
 /* ─── TABS ─── */
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
 .tab{font-family:var(--font-hud);font-size:10px;font-weight:700;letter-spacing:.08em;padding:8px 4px;border-radius:6px;border:1px solid var(--border2);background:var(--panel2);color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
 .tab:hover{color:var(--text);border-color:var(--muted)}
 .tab.active{background:var(--accent);color:#0a0800;border-color:var(--accent);box-shadow:0 0 12px rgba(245,196,0,.35)}
@@ -598,7 +598,130 @@ const ALL_PARTS = [
   {name:"Orbiter_3",pieceType:"OrbiterPiece",screenNameX:"Geodesic Orb",cardType:"ORBITER",earnedAt:2500000,thrust:2500,burnTime:30,weight:100,weightFuel:300,stability:0,zany:1},
 ];
 
-const CATS = {THRUST:'Engines',STABILIZER:'Fins/Wings',NOSE:'Nose Cones',ORBITER:'Orbiter/Fuel'};
+// ── PART CATALOG NORMALIZATION ──
+// Core engineering parts now follow a predictable Small / Medium / Large pattern.
+// Prestige/zany parts stay as bonus parts so the main classroom progression remains coherent.
+const SIZE_ORDER = {small:1, medium:2, large:3};
+const SIZE_LABEL = {small:'Small', medium:'Medium', large:'Large'};
+const SIZE_SUFFIX_RE = /\s*\((sml|small|med|medium|lrg|large)\)\s*$/i;
+const SIZE_WORD = {sml:'small', small:'small', med:'medium', medium:'medium', lrg:'large', large:'large'};
+
+function addPartVariant(part){
+  if(!ALL_PARTS.some(p=>p.name===part.name)) ALL_PARTS.push(part);
+}
+
+// Fill the few missing engine/booster families so every core propulsion family has S/M/L.
+addPartVariant({name:'Engine_22',pieceType:'EnginePiece',screenNameX:'Magnetoplasma (sml)',cardType:'THRUST',earnedAt:380000,thrust:18000,burnTime:36,weight:160,weightFuel:360,stability:0,dragCoeff:0.68});
+addPartVariant({name:'Engine_23',pieceType:'EnginePiece',screenNameX:'Magnetoplasma (lrg)',cardType:'THRUST',earnedAt:900000,thrust:85000,burnTime:42,weight:850,weightFuel:1500,stability:0.2,dragCoeff:0.68});
+addPartVariant({name:'SRB_4',pieceType:'SRBPiece',screenNameX:'SRB Pair (sml)',cardType:'BOOSTER',earnedAt:12000,thrust:90000,burnTime:14,weight:450,weightFuel:350,stability:0});
+addPartVariant({name:'SRB_5',pieceType:'SRBPiece',screenNameX:'SRB Pair (lrg)',cardType:'BOOSTER',earnedAt:200000,thrust:260000,burnTime:22,weight:1800,weightFuel:1200,stability:0});
+
+const PART_OVERRIDES = {
+  // Solid engines: simple, high-thrust, short burn.
+  Engine_3:{screenNameX:'Solid Fuel (Small)',family:'Solid Fuel',size:'small',earnedAt:0},
+  Engine_2:{screenNameX:'Solid Fuel (Medium)',family:'Solid Fuel',size:'medium',earnedAt:0},
+  Engine_1:{screenNameX:'Solid Fuel (Large)',family:'Solid Fuel',size:'large',earnedAt:10000},
+  // Liquid engines: more controllable and better for sustained burns.
+  Engine_5:{screenNameX:'Liquid Fuel (Small)',family:'Liquid Fuel',size:'small',earnedAt:12000},
+  Engine_6:{screenNameX:'Liquid Fuel (Medium)',family:'Liquid Fuel',size:'medium',earnedAt:0},
+  Engine_7:{screenNameX:'Liquid Fuel (Large)',family:'Liquid Fuel',size:'large',earnedAt:95000},
+  // Hybrid engines: mid-career bridge between brute thrust and efficiency.
+  Engine_8:{screenNameX:'Hybrid Fuel (Small)',family:'Hybrid Fuel',size:'small',earnedAt:270000},
+  Engine_10:{screenNameX:'Hybrid Fuel (Medium)',family:'Hybrid Fuel',size:'medium',earnedAt:450000},
+  Engine_9:{screenNameX:'Hybrid Fuel (Large)',family:'Hybrid Fuel',size:'large',earnedAt:625000},
+  // Magnetoplasma now has a full S/M/L family instead of one orphan part.
+  Engine_22:{family:'Magnetoplasma',size:'small'},
+  Engine_4:{screenNameX:'Magnetoplasma (Medium)',family:'Magnetoplasma',size:'medium',earnedAt:640000,burnTime:38,dragCoeff:0.68},
+  Engine_23:{family:'Magnetoplasma',size:'large'},
+
+  // Nose families: consistent S/M/L language and sensible unlock path.
+  Nose_3:{screenNameX:'Elliptical Nose (Small)',family:'Elliptical Nose',size:'small',earnedAt:0},
+  Nose_6:{screenNameX:'Elliptical Nose (Medium)',family:'Elliptical Nose',size:'medium',earnedAt:0},
+  Nose_7:{screenNameX:'Elliptical Nose (Large)',family:'Elliptical Nose',size:'large',earnedAt:100000},
+  Nose_8:{screenNameX:'Ogive Nose (Small)',family:'Ogive Nose',size:'small',earnedAt:0},
+  Nose_9:{screenNameX:'Ogive Nose (Medium)',family:'Ogive Nose',size:'medium',earnedAt:20000},
+  Nose_10:{screenNameX:'Ogive Nose (Large)',family:'Ogive Nose',size:'large',earnedAt:100000},
+  Nose_1:{screenNameX:'Conical Nose (Small)',family:'Conical Nose',size:'small',earnedAt:70000},
+  Nose_11:{screenNameX:'Conical Nose (Medium)',family:'Conical Nose',size:'medium',earnedAt:270000},
+  Nose_12:{screenNameX:'Conical Nose (Large)',family:'Conical Nose',size:'large',earnedAt:560000},
+
+  // Fuel tanks: make the S/M/L ladder available early enough to actually teach staging.
+  Fuel_1:{screenNameX:'Fuel Tank (Small)',family:'Fuel Tank',size:'small',cardType:'FUEL',earnedAt:12000},
+  Fuel_2:{screenNameX:'Fuel Tank (Medium)',family:'Fuel Tank',size:'medium',cardType:'FUEL',earnedAt:70000},
+  Fuel_3:{screenNameX:'Fuel Tank (Large)',family:'Fuel Tank',size:'large',cardType:'FUEL',earnedAt:200000},
+
+  // Side boosters are a core booster family now, not a single mystery orbiter part.
+  SRB_4:{family:'SRB Pair',size:'small',cardType:'BOOSTER'},
+  SRB_1:{screenNameX:'SRB Pair (Medium)',family:'SRB Pair',size:'medium',cardType:'BOOSTER',earnedAt:70000,thrust:170000,burnTime:18,weight:900,weightFuel:700},
+  SRB_5:{family:'SRB Pair',size:'large',cardType:'BOOSTER'},
+  SRB_2:{cardType:'BOOSTER'},
+  SRB_3:{cardType:'BOOSTER'},
+};
+
+function inferPartFamilyAndSize(p){
+  let clean=(p.screenNameX||p.name).trim();
+  let size=p.size || null;
+  const m=clean.match(SIZE_SUFFIX_RE);
+  if(m){
+    size=SIZE_WORD[m[1].toLowerCase()] || size;
+    clean=clean.replace(SIZE_SUFFIX_RE,'').trim();
+  }
+  const family=p.family || clean;
+  return {family,size};
+}
+
+function normalizePartCatalog(){
+  ALL_PARTS.forEach(p=>{
+    if(PART_OVERRIDES[p.name]) Object.assign(p, PART_OVERRIDES[p.name]);
+    const inferred=inferPartFamilyAndSize(p);
+    p.family=p.family || inferred.family;
+    p.size=p.size || inferred.size;
+    p.sizeRank=SIZE_ORDER[p.size] || 9;
+    p.sizeLabel=p.size ? SIZE_LABEL[p.size] : '';
+    // Make displayed names consistent without touching zany one-offs unless explicitly overridden.
+    if(p.size && !PART_OVERRIDES[p.name]?.screenNameX && !p.zany){
+      p.screenNameX=`${p.family} (${p.sizeLabel})`;
+    }
+    // Fuel and boosters get their own tabs instead of being buried under Orbiter/Fuel.
+    if(p.pieceType==='FuelPiece') p.cardType='FUEL';
+    if(p.pieceType==='SRBPiece') p.cardType=p.zany?'BOOSTER':'BOOSTER';
+  });
+  ALL_PARTS.sort((a,b)=>
+    (a.cardType||'').localeCompare(b.cardType||'') ||
+    (a.family||'').localeCompare(b.family||'') ||
+    (a.sizeRank||9)-(b.sizeRank||9) ||
+    (a.earnedAt||0)-(b.earnedAt||0)
+  );
+}
+normalizePartCatalog();
+
+function catalogVariantReport(){
+  const core=ALL_PARTS.filter(p=>!p.zany && ['EnginePiece','FuelPiece','NosePiece','SRBPiece'].includes(p.pieceType));
+  const groups={};
+  core.forEach(p=>{ const k=`${p.pieceType}:${p.family}`; (groups[k] ||= new Set()).add(p.size); });
+  return Object.entries(groups).map(([k,set])=>({family:k,sizes:[...set].sort((a,b)=>(SIZE_ORDER[a]||9)-(SIZE_ORDER[b]||9))}));
+}
+
+function partSizeScale(p){
+  return p?.size==='small' ? .86 : p?.size==='large' ? 1.14 : 1;
+}
+function partSortKey(p){
+  return `${String(p.earnedAt||0).padStart(9,'0')}|${p.family||''}|${p.sizeRank||9}|${p.screenNameX||''}`;
+}
+function partStatLine(p){
+  const prefix = p.sizeLabel ? `${p.sizeLabel} · ` : '';
+  if(p.pieceType==='EnginePiece'){
+    const fuel=p.weightFuel?` · fuel ${formatMass(p.weightFuel)}`:'';
+    return `${prefix}thrust ${(p.thrust/1000).toFixed(0)}kN · burn ${p.burnTime}s · dry ${formatMass(p.weight)}${fuel}`;
+  }
+  if(p.pieceType==='FinPiece') return `stability +${p.stability} · weight ${formatMass(p.weight)}`;
+  if(p.pieceType==='NosePiece') return `${prefix}drag ${p.dragCoeff||'?'} · weight ${formatMass(p.weight)}`;
+  if(p.pieceType==='SRBPiece') return `${prefix}side booster pair · thrust ${((p.thrust||0)/1000).toFixed(0)}kN · burn ${p.burnTime||0}s`;
+  if(p.pieceType==='FuelPiece') return `${prefix}dry ${formatMass(p.weight||0)} · fuel ${formatMass(p.weightFuel||0)} · extends burn`;
+  return `mass ${formatMass(p.weight||0)} · fuel ${formatMass(p.weightFuel||0)}`;
+}
+
+const CATS = {THRUST:'Engines',FUEL:'Fuel Tanks',BOOSTER:'Side Boosters',STABILIZER:'Fins/Wings',NOSE:'Nose Cones',ORBITER:'Orbiters'};
 const PHYSICS = {
   thrustScale: 1.35,
   apogeeAssistSpeed: 30,
@@ -811,7 +934,7 @@ function artFor(p){ return PART_ART[p.name] || 'assets/img_1678_lossless.png'; }
 let activeTab = 'THRUST';
 let build = {stack:[], fins:[], nose:null};
 
-const EASY_PARTS = new Set(['Engine_1','Engine_2','Engine_6','Fin_1','Fin_2','Fin_3','Nose_6','Nose_10']);
+const EASY_PARTS = new Set(['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fin_1','Fin_2','Fin_3','Nose_3','Nose_6','Nose_8','Nose_9']);
 const MODES = {
   easy:{
     key:'easy', label:'EASY MODE', bestLabel:'EASY BEST',
@@ -963,7 +1086,7 @@ function renderParts(){
   const list=ALL_PARTS
     .filter(p=>p.cardType===activeTab)
     .filter(isVisibleInLibrary)
-    .sort((a,b)=>(a.earnedAt||0)-(b.earnedAt||0));
+    .sort((a,b)=>partSortKey(a).localeCompare(partSortKey(b)));
 
   const unlocked=list.filter(p=>isUnlocked(p));
   const locked=list.filter(p=>!isUnlocked(p));
@@ -975,15 +1098,7 @@ function renderParts(){
     card.dataset.id=p.name;
     card.draggable=isUnlocked(p);
     const badgeCls = {EnginePiece:'badge-engine',FuelPiece:'badge-fuel',FinPiece:'badge-fin',NosePiece:'badge-nose',SRBPiece:'badge-orbiter',OrbiterPiece:'badge-orbiter'}[p.pieceType]||'badge-engine';
-    const statLine = p.pieceType==='EnginePiece'
-      ? `thrust ${(p.thrust/1000).toFixed(0)}kN · burn ${p.burnTime}s · mass ${p.weight}kg`
-      : p.pieceType==='FinPiece'
-      ? `stability +${p.stability} · weight ${p.weight}kg`
-      : p.pieceType==='NosePiece'
-      ? `drag ${p.dragCoeff||'?'} · weight ${p.weight}kg`
-      : p.pieceType==='SRBPiece'
-      ? `side booster · thrust ${((p.thrust||0)/1000).toFixed(0)}kN · burn ${p.burnTime||0}s`
-      : `mass ${p.weight||0}kg · fuel ${p.weightFuel||0}kg`;
+    const statLine = partStatLine(p);
     card.innerHTML=`
       <div class="part-icon">${partSVG(p,44,44)}</div>
       <div>
@@ -1026,7 +1141,7 @@ function clearBuild(){ build={stack:[],fins:[],nose:null}; renderAll(); }
 function buildSample(){
   // Mode-aware samples: simple in Easy/Career, exploratory in Fully Unlocked.
   if(gameMode==='sandbox'){
-    build={nose:'Nose_7', stack:['Engine_1','Engine_6','Engine_7'], fins:['Fin_2','Fin_2']};
+    build={nose:'Nose_7', stack:['Engine_1','Fuel_2','Engine_6','SRB_1'], fins:['Fin_2','Fin_2']};
   } else {
     build={nose:'Nose_6', stack:['Engine_2'], fins:['Fin_1','Fin_1']};
   }
@@ -1248,11 +1363,13 @@ function spriteDims(p, vi=0) {
   // Only the lowest visible engine should show a full nozzle bell. Upper-stage
   // engines are tucked inside an interstage shroud before separation, so they
   // render as compact body modules instead of exposed cones with fake air gaps.
-  if(p.pieceType === 'EnginePiece' && vi > 0) return { w: ROCKET_BODY_W, h: 38 };
+  const sz = partSizeScale(p);
+  if(p.pieceType === 'EnginePiece' && vi > 0) return { w: ROCKET_BODY_W, h: Math.round(38 * sz) };
   const named = SPRITE_DIMS[p.name] || SPRITE_DIMS[p.pieceType] || {nw:76,nh:69};
-  // Scale so rendered width = ROCKET_BODY_W
+  // Scale so rendered width = ROCKET_BODY_W. Height carries S/M/L visually without breaking the body column.
   const scale = ROCKET_BODY_W / named.nw;
-  return { w: ROCKET_BODY_W, h: Math.round(named.nh * scale) };
+  const heightScale = ['EnginePiece','NosePiece','FuelPiece','SRBPiece'].includes(p.pieceType) ? sz : 1;
+  return { w: ROCKET_BODY_W, h: Math.round(named.nh * scale * heightScale) };
 }
 
 // Fins have their own sizing — don't stretch to body width
@@ -1270,7 +1387,7 @@ function finDims(p) {
 }
 
 // Parts whose PNG sprites contain Lego studs — render as SVG instead
-const SVG_ONLY_TYPES = new Set(['EnginePiece','FinPiece']);
+const SVG_ONLY_TYPES = new Set(['EnginePiece','FinPiece','SRBPiece']);
 const SVG_ONLY_NAMES = new Set([
   'SRB_1','SRB_2','SRB_3','Orbiter_1','Orbiter_2'  // also studded/branded
 ]);
@@ -1454,10 +1571,11 @@ function centeredFinPlacement(anchor, fw, fh, isLeft, pair=0){
   return {x, bottom, top, overlap};
 }
 
-function sideBoosterLayout(layout, scale=1){
+function sideBoosterLayout(layout, scale=1, part=null){
   const coreH = Math.max(84*scale, layout.totalHeight || 120*scale);
-  const w = Math.round(34*scale);
-  const h = Math.round(Math.max(82*scale, Math.min(coreH*.78, 152*scale)));
+  const sz = partSizeScale(part);
+  const w = Math.round(34*scale*sz);
+  const h = Math.round(Math.max(82*scale*sz, Math.min(coreH*.78, 152*scale*sz)));
   const bodySeg = layout.segments.find(s=>['FuelPiece','OrbiterPiece'].includes(s.p.pieceType))
     || layout.segments.find(s=>s.p.pieceType==='EnginePiece')
     || layout.segments[0];
@@ -1475,7 +1593,7 @@ function sideBoosterLayout(layout, scale=1){
 function renderSideBoostersDOM(mount, layout, boosters){
   if(!boosters?.length || !layout?.segments?.length) return;
   const p=boosters[0];
-  const b=sideBoosterLayout(layout, 1);
+  const b=sideBoosterLayout(layout, 1, p);
   const mountW=260;
   const sides=[{x:b.leftX, mirror:false},{x:b.rightX, mirror:true}];
   sides.forEach(side=>{
@@ -1910,10 +2028,12 @@ function canvasPieceDims(p, vi=0) {
   // Use real sprite aspect ratios, scaled to CANVAS_ROCKET_W. Upper-stage
   // engines render as compact interstage shrouds until they become the active
   // bottom engine after separation.
-  if(p.pieceType === 'EnginePiece' && vi > 0) return { w: CANVAS_ROCKET_W, h: 30 };
+  const sz = partSizeScale(p);
+  if(p.pieceType === 'EnginePiece' && vi > 0) return { w: CANVAS_ROCKET_W, h: Math.round(30 * sz) };
   const d = SPRITE_DIMS[p.name] || SPRITE_DIMS[p.pieceType] || {nw:76,nh:69};
   const scale = CANVAS_ROCKET_W / d.nw;
-  return { w: CANVAS_ROCKET_W, h: Math.round(d.nh * scale) };
+  const heightScale = ['EnginePiece','NosePiece','FuelPiece','SRBPiece'].includes(p.pieceType) ? sz : 1;
+  return { w: CANVAS_ROCKET_W, h: Math.round(d.nh * scale * heightScale) };
 }
 
 function drawSpriteOrVector(part, x, y, w, h, mirror, fuelRatio) {
@@ -2055,7 +2175,7 @@ function stageAssemblyHeight(parts){
 function drawSideBoostersCanvas(layout, boosters=[], boostersBurning=false){
   if(!boosters?.length || !layout?.segments?.length) return;
   const p=boosters[0];
-  const b=sideBoosterLayout(layout, CANVAS_ROCKET_W / ROCKET_BODY_W);
+  const b=sideBoosterLayout(layout, CANVAS_ROCKET_W / ROCKET_BODY_W, p);
   ctx.save();
   ctx.strokeStyle='rgba(24,32,38,.85)';
   ctx.lineWidth=4;
