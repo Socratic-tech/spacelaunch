@@ -457,6 +457,73 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 }
 .landing-controls .btn-secondary:disabled{opacity:.45;cursor:not-allowed}
 
+.landing-controls{
+  grid-template-columns:minmax(220px,1.4fr) repeat(4,auto);
+}
+.landing-controls .btn-secondary{
+  min-height:42px;
+  font-size:11px;
+  white-space:nowrap;
+}
+.landing-controls .btn-secondary.press-now{
+  border-color:var(--accent);
+  color:#08101d;
+  background:linear-gradient(180deg,#ffe16b,#f5c400);
+  box-shadow:0 0 18px rgba(245,196,0,.28);
+}
+.landing-status{
+  line-height:1.45;
+}
+.landing-status b{color:var(--accent)}
+.landing-guide-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(120px,1fr));
+  gap:6px;
+  margin-top:6px;
+}
+.landing-cue{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  border-radius:7px;
+  padding:6px 7px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.12);
+}
+.landing-cue span{
+  font-family:var(--font-hud);
+  font-size:9px;
+  letter-spacing:.12em;
+  color:rgba(220,236,255,.72);
+}
+.landing-cue strong{
+  font-family:var(--font-hud);
+  font-size:12px;
+  letter-spacing:.04em;
+  color:#dcecff;
+}
+.landing-cue.good{border-color:rgba(0,232,122,.35);background:rgba(0,232,122,.10)}
+.landing-cue.good strong{color:var(--green)}
+.landing-cue.warn{border-color:rgba(245,196,0,.42);background:rgba(245,196,0,.10)}
+.landing-cue.warn strong{color:var(--accent)}
+.landing-cue.bad{border-color:rgba(255,61,87,.42);background:rgba(255,61,87,.10)}
+.landing-cue.bad strong{color:#ff8fab}
+.landing-cue.now{
+  border-color:rgba(245,196,0,.8);
+  background:rgba(245,196,0,.18);
+  animation:pulseLandingCue 1s ease-in-out infinite;
+}
+@keyframes pulseLandingCue{
+  0%,100%{box-shadow:0 0 0 rgba(245,196,0,0)}
+  50%{box-shadow:0 0 16px rgba(245,196,0,.32)}
+}
+@media(max-width:900px){
+  .landing-controls{grid-template-columns:1fr 1fr}
+  .landing-title,.landing-status{grid-column:1/-1}
+  .landing-guide-grid{grid-template-columns:1fr}
+}
+
+
 .mix-zone{display:flex;flex-direction:column;gap:5px}
 .mix-label{font-family:var(--font-hud);font-size:10px;letter-spacing:.1em;color:var(--muted)}
 .meter{
@@ -682,8 +749,8 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
       <button class="btn-secondary" id="closeBtn">✕ CLOSE</button>
     </div>
     <div class="landing-controls" id="landingControls">
-      <div class="landing-title">REUSABLE BOOSTER LANDING<small>After Stage 1 separates, land it on the target pad.</small></div>
-      <button class="btn-secondary" id="flipBoosterBtn">↻ FLIP BOOSTER</button>
+      <div class="landing-title">LANDING COMPUTER<small>Follow the steps to bring Stage 1 home.</small></div>
+      <button class="btn-secondary" id="flipBoosterBtn">TURN ENGINES DOWN</button>
       <button class="btn-secondary" id="boostbackBtn">BOOSTBACK BURN</button>
       <button class="btn-secondary" id="landingBurnBtn">LANDING BURN</button>
       <button class="btn-secondary" id="deployLegsBtn">DEPLOY LEGS</button>
@@ -3250,15 +3317,43 @@ function landingPhase(rb){
   if(!rb || rb.result) return 'result';
   if(rb.autopilot) return 'autopilot';
   if(!rb.flipped) return 'flip';
-  if(rb.altitude > 650 && Math.abs(rb.x) > rb.targetRadius*1.15) return 'boostback';
-  if(rb.altitude < 520) return 'landing';
-  return 'coast';
+
+  // Keep boostback as a taught timing window instead of a guessing game.
+  if(rb.altitude > 680){
+    if(Math.abs(rb.x) > rb.targetRadius*.70) return 'boostback';
+    return 'coast';
+  }
+  return 'landing';
 }
-function setLandingButton(id, show, enabled, active=false){
+function landingGuide(rb, phase){
+  if(!rb) return '';
+  const fuelPct=Math.max(0,Math.round((rb.fuel/Math.max(1,rb.fuelMax))*100));
+  const speed=Math.abs(rb.vy);
+  const err=Math.abs(rb.x);
+  const speedClass = speed < 8 ? 'good' : speed < 16 ? 'warn' : 'bad';
+  const speedText = speed < 8 ? 'GOOD SPEED' : speed < 16 ? 'SLOW DOWN' : 'TOO FAST';
+  const targetClass = err < rb.targetRadius*.7 ? 'good' : err < rb.hardRadius ? 'warn' : 'bad';
+  const targetText = err < rb.targetRadius*.7 ? 'ON TARGET' : err < rb.hardRadius ? 'NEAR TARGET' : 'OFF TARGET';
+  const nextText = phase==='flip' ? 'TURN ENGINES DOWN'
+    : phase==='boostback' ? 'PRESS BOOSTBACK'
+    : phase==='landing' ? 'BURN + LEGS'
+    : phase==='autopilot' ? 'WATCH AUTOPILOT'
+    : phase==='result' ? 'LANDING COMPLETE'
+    : 'WAIT';
+  const nextClass = (phase==='boostback'||phase==='landing') ? 'now' : (phase==='coast'?'warn':'good');
+  return `<div class="landing-guide-grid">
+    <div class="landing-cue ${nextClass}"><span>NEXT STEP</span><strong>${nextText}</strong></div>
+    <div class="landing-cue ${speedClass}"><span>SPEED</span><strong>${speedText}</strong></div>
+    <div class="landing-cue ${targetClass}"><span>TARGET</span><strong>${targetText}</strong></div>
+  </div>`;
+}
+function setLandingButton(id, show, enabled, active=false, pressNow=false, label=''){
   const b=document.getElementById(id); if(!b) return;
   b.classList.toggle('guided-hidden', !show);
   b.disabled=!enabled;
   b.classList.toggle('active', !!active);
+  b.classList.toggle('press-now', !!pressNow);
+  if(label) b.textContent=label;
 }
 function updateLandingControls(){
   const box=landingControlsEl(); if(!box) return;
@@ -3268,49 +3363,124 @@ function updateLandingControls(){
   const status=document.getElementById('landingStatus');
   const title=document.querySelector('.landing-title small');
   if(!show){
-    ['flipBoosterBtn','boostbackBtn','landingBurnBtn','deployLegsBtn'].forEach(id=>setLandingButton(id,false,false,false));
-    if(status) status.textContent='';
+    ['flipBoosterBtn','boostbackBtn','landingBurnBtn','deployLegsBtn'].forEach(id=>setLandingButton(id,false,false,false,false));
+    if(status) status.innerHTML='';
     return;
   }
+
   const phase=landingPhase(rb);
   const done=!!rb.result;
   const auto=!!rb.autopilot;
-  setLandingButton('flipBoosterBtn', phase==='flip'||auto||done, !done && !auto && phase==='flip', rb.flipped);
-  setLandingButton('boostbackBtn', phase==='boostback'||phase==='coast'||auto||done, !done && !auto && (phase==='boostback'||phase==='coast'), rb.boostbackBurn);
-  setLandingButton('landingBurnBtn', phase==='landing'||auto||done, !done && !auto && phase==='landing', rb.landingBurn);
-  setLandingButton('deployLegsBtn', phase==='landing'||auto||done, !done && !auto && phase==='landing', rb.legs);
-  if(title){
-    title.textContent = auto ? 'Autopilot is demonstrating booster recovery.'
-      : phase==='flip' ? 'Step 1: flip the booster engines-down.'
-      : phase==='boostback' ? 'Step 2: use boostback to aim for the target.'
-      : phase==='landing' ? 'Step 3: deploy legs and slow down for touchdown.'
-      : 'Coast and watch the landing window.';
-  }
-  if(!status) return;
   const fuelPct=Math.max(0,Math.round((rb.fuel/Math.max(1,rb.fuelMax))*100));
   const speed=Math.abs(rb.vy).toFixed(1);
   const drift=Math.abs(rb.x).toFixed(0);
+  const trainingAssist=!!rb.assist;
+
+  // The controls now reveal the landing sequence rather than all controls at once.
+  setLandingButton(
+    'flipBoosterBtn',
+    phase==='flip'||auto||done,
+    !done && !auto && phase==='flip',
+    rb.flipped,
+    phase==='flip',
+    rb.flipped ? 'ENGINES DOWN ✓' : 'TURN ENGINES DOWN'
+  );
+
+  setLandingButton(
+    'boostbackBtn',
+    phase==='boostback'||phase==='coast'||auto||done,
+    !done && !auto && phase==='boostback',
+    rb.boostbackBurn,
+    phase==='boostback',
+    phase==='boostback' ? 'PRESS NOW: BOOSTBACK' : (rb.boostbackBurn ? 'BOOSTBACK ON ✓' : 'WAIT FOR BOOSTBACK')
+  );
+
+  setLandingButton(
+    'landingBurnBtn',
+    phase==='landing'||auto||done,
+    !done && !auto && phase==='landing',
+    rb.landingBurn,
+    phase==='landing',
+    phase==='landing' ? 'PRESS NOW: LANDING BURN' : (rb.landingBurn ? 'LANDING BURN ON ✓' : 'LANDING BURN')
+  );
+
+  setLandingButton(
+    'deployLegsBtn',
+    phase==='landing'||auto||done,
+    !done && !auto && phase==='landing',
+    rb.legs,
+    phase==='landing' && !rb.legs,
+    rb.legs ? 'LEGS DEPLOYED ✓' : 'DEPLOY LEGS'
+  );
+
+  if(title){
+    title.textContent = auto ? 'Autopilot is showing the landing sequence.'
+      : phase==='flip' ? 'Step 1: turn the engines toward the ground.'
+      : phase==='boostback' ? 'Step 2: press now to aim back toward the target.'
+      : phase==='landing' ? 'Step 3: slow down and get the legs out.'
+      : phase==='coast' ? 'Wait for the landing computer to call the next burn.'
+      : 'Landing complete. Review the result.';
+  }
+  if(!status) return;
   if(rb.result){
     const remain=Math.max(0,Math.ceil(60-(rb.resultAge||0)));
-    status.textContent=`${rb.result.toUpperCase()} · touchdown complete · returning to normal view in ${remain}s`;
+    status.innerHTML=`<b>${rb.result.toUpperCase()}</b> · touchdown complete · returning to normal view in ${remain}s ${landingGuide(rb,'result')}`;
     return;
   }
   if(auto){
-    status.textContent=`Autopilot active · watch the sequence: flip → boostback → landing burn → legs · altitude ${formatDistance(Math.max(0,rb.altitude))} · fuel ${fuelPct}%`;
+    status.innerHTML=`Autopilot active. Watch the pattern: <b>engines down → boostback → landing burn → legs</b>. Fuel ${fuelPct}%. ${landingGuide(rb,'autopilot')}`;
   } else if(phase==='flip'){
-    status.textContent=`Step 1: press FLIP BOOSTER. The engines must point down before landing.`;
+    status.innerHTML=`<b>Step 1:</b> Turn the engines down. The engine must point at the ground so the booster can slow down. ${landingGuide(rb,phase)}`;
   } else if(phase==='boostback'){
-    status.textContent=`Step 2: use BOOSTBACK BURN to reduce target error. Current error ${drift} m.`;
+    status.innerHTML=`<b>Press now:</b> Use boostback to move toward the target. Current target error: ${drift} m. ${trainingAssist?'Training assist will help a little if you are late.':''} ${landingGuide(rb,phase)}`;
   } else if(phase==='landing'){
-    status.textContent=`Step 3: DEPLOY LEGS and use LANDING BURN. Descent ${speed} m/s · fuel ${fuelPct}%.`;
+    status.innerHTML=`<b>Press now:</b> Use landing burn and deploy legs. Descent speed: ${speed} m/s · fuel ${fuelPct}%. ${landingGuide(rb,phase)}`;
   } else {
-    status.textContent=`Coasting toward target · altitude ${formatDistance(Math.max(0,rb.altitude))} · descent ${speed} m/s · target error ${drift} m · fuel ${fuelPct}%`;
+    status.innerHTML=`Coast for a moment. The landing computer will light up the next button when it is time. Target error: ${drift} m · fuel ${fuelPct}%. ${landingGuide(rb,phase)}`;
   }
 }
-function toggleBoostback(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.boostbackBurn=!launchState.reusable.boostbackBurn; updateLandingControls(); }
-function toggleLandingBurn(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.landingBurn=!launchState.reusable.landingBurn; updateLandingControls(); }
-function flipBooster(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.flipped=true; launchState.reusable.angle=Math.PI; addEvent('Booster flipped for reentry.','good'); updateLandingControls(); }
-function deployLegs(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.legs=true; addEvent('Landing legs deployed.','good'); updateLandingControls(); }
+function toggleBoostback(){
+  const rb=launchState?.reusable;
+  if(!rb || rb.result || rb.autopilot) return;
+  if(landingPhase(rb)!=='boostback'){
+    addEvent('Landing computer says wait for boostback.','bad');
+    updateLandingControls();
+    return;
+  }
+  rb.boostbackBurn=!rb.boostbackBurn;
+  updateLandingControls();
+}
+function toggleLandingBurn(){
+  const rb=launchState?.reusable;
+  if(!rb || rb.result || rb.autopilot) return;
+  if(landingPhase(rb)!=='landing'){
+    addEvent('Landing computer says wait for landing burn.','bad');
+    updateLandingControls();
+    return;
+  }
+  rb.landingBurn=!rb.landingBurn;
+  updateLandingControls();
+}
+function flipBooster(){
+  const rb=launchState?.reusable;
+  if(!rb || rb.result || rb.autopilot) return;
+  rb.flipped=true;
+  // Do not snap to upside-down. The physics loop now eases the booster into engines-down orientation.
+  addEvent('Booster turned engines-down.','good');
+  updateLandingControls();
+}
+function deployLegs(){
+  const rb=launchState?.reusable;
+  if(!rb || rb.result || rb.autopilot) return;
+  if(landingPhase(rb)!=='landing'){
+    addEvent('Landing computer says wait to deploy legs.','bad');
+    updateLandingControls();
+    return;
+  }
+  rb.legs=true;
+  addEvent('Landing legs deployed.','good');
+  updateLandingControls();
+}
 function createReusableBooster(stage, fins){
   if(!isLandingMode() || !launchState || !stage || launchState.reusable) return;
   const profile=launchState.landingProfile || currentLandingProfile();
@@ -3318,11 +3488,11 @@ function createReusableBooster(stage, fins){
   launchState.reusable={
     active:true, result:null, score:0, parts:stage.parts.slice(), fins:(fins||[]).slice(),
     altitude:Math.max(1500, launchState.altitude*.72), maxAltitude:Math.max(1500, launchState.altitude*.72),
-    x:profile.startX || 1200, vx:profile.startVx || 60, vy:Math.max(20,launchState.velocity*.2), angle:0, spin:0,
+    x:profile.startX || 1200, vx:profile.startVx || 60, vy:Math.max(20,launchState.velocity*.2), angle:Math.PI*.82, spin:0,
     flipped:false, legs:false, boostbackBurn:false, landingBurn:false,
     fuel:fuelReserve, fuelMax:fuelReserve, landed:false, age:0, resultAge:0, dismissed:false,
     targetRadius:profile.targetRadius || 95, hardRadius:profile.hardRadius || 220,
-    targetKind:profile.targetKind || 'pad', autopilot:profile.pilot==='auto', missionName:profile.mission?.name || 'Landing Challenge'
+    targetKind:profile.targetKind || 'pad', autopilot:profile.pilot==='auto', assist:profile.mission?.key==='trainer', missionName:profile.mission?.name || 'Landing Challenge'
   };
   addEvent('Landing challenge active: recover Stage 1.','good');
   setResult(`<div class="result-icon">🎯</div><div><div class="result-cue stage-cue">${launchState.reusable.missionName}: upper stage is automatic now. Focus on landing Stage 1.</div></div>`);
@@ -3331,10 +3501,9 @@ function createReusableBooster(stage, fins){
 function updateAutopilot(rb){
   if(!rb.autopilot || rb.result) return;
   rb.flipped=true;
-  rb.angle=Math.PI;
-  rb.boostbackBurn = rb.altitude>520 && Math.abs(rb.x)>Math.max(45, rb.targetRadius*.45) && rb.fuel>6;
-  rb.landingBurn = rb.altitude<520 && Math.abs(rb.vy)>4.8 && rb.fuel>0;
-  rb.legs = rb.altitude<320;
+  rb.boostbackBurn = rb.altitude>680 && Math.abs(rb.x)>Math.max(35, rb.targetRadius*.35) && rb.fuel>6;
+  rb.landingBurn = rb.altitude<560 && Math.abs(rb.vy)>4.2 && rb.fuel>0;
+  rb.legs = rb.altitude<340;
 }
 function updateReusableBooster(dt){
   const rb=launchState?.reusable; if(!rb || rb.dismissed) return;
@@ -3351,14 +3520,22 @@ function updateReusableBooster(dt){
   const control=rb.flipped?1:.28;
   if(rb.boostbackBurn && rb.fuel>0){
     const dir=rb.x>0?-1:1;
-    ax += dir*(rb.autopilot?50:42)*control;
+    ax += dir*(rb.autopilot?50:(rb.assist?46:42))*control;
     ay += 3*control;
-    rb.fuel=Math.max(0,rb.fuel-dt*(rb.autopilot?1.75:2.0));
+    rb.fuel=Math.max(0,rb.fuel-dt*(rb.autopilot?1.75:(rb.assist?1.75:2.0)));
+  } else if(rb.assist && rb.flipped && rb.altitude>680 && Math.abs(rb.x)>rb.targetRadius*.95 && rb.fuel>10){
+    // Training assist: a small nudge keeps new players from missing the concept by seconds.
+    ax += (rb.x>0?-1:1)*14*control;
+    rb.fuel=Math.max(0,rb.fuel-dt*.55);
   }
   if(rb.landingBurn && rb.fuel>0){
-    ay += (rb.flipped?30:11);
-    ax += -Math.sign(rb.vx)*Math.min(Math.abs(rb.vx)*.6, 20);
-    rb.fuel=Math.max(0,rb.fuel-dt*(rb.autopilot?2.9:3.2));
+    ay += (rb.flipped?(rb.assist?34:30):11);
+    ax += -Math.sign(rb.vx)*Math.min(Math.abs(rb.vx)*.7, rb.assist?26:20);
+    rb.fuel=Math.max(0,rb.fuel-dt*(rb.autopilot?2.9:(rb.assist?2.65:3.2)));
+  } else if(rb.assist && rb.flipped && rb.altitude<360 && Math.abs(rb.vy)>12 && rb.fuel>6){
+    // Training assist lightly slows a late landing burn without making advanced missions automatic.
+    ay += 12;
+    rb.fuel=Math.max(0,rb.fuel-dt*.75);
   }
   if(rb.fuel<=0){ rb.boostbackBurn=false; rb.landingBurn=false; }
   ax += -rb.vx*.018;
@@ -3367,7 +3544,8 @@ function updateReusableBooster(dt){
   rb.vy += ay*dt;
   rb.x += rb.vx*dt;
   rb.altitude += rb.vy*dt;
-  rb.angle += (rb.flipped ? (Math.PI-rb.angle)*dt*2.4 : (Math.sin(rb.age*2)*.08-rb.angle)*dt*1.5);
+  const targetAngle = rb.flipped ? 0 : Math.PI*.82 + Math.sin(rb.age*1.2)*.08;
+  rb.angle += (targetAngle-rb.angle)*dt*(rb.flipped?2.2:1.4);
   if(rb.altitude<=0){
     rb.altitude=0;
     const touchdown=Math.abs(rb.vy);
@@ -3444,7 +3622,9 @@ function drawReusableBoosterPanel(){
   ctx.fillStyle='rgba(5,17,31,.72)';roundRect(ctx,x0+20,H-84,w-40,30,8);ctx.fill();
   ctx.fillStyle=rb.result?(rb.result==='landed'?'#00e87a':'#ff8fab'):'#dcecff';
   ctx.font='bold 11px "Share Tech Mono",monospace';ctx.textAlign='left';
-  ctx.fillText(`${rb.autopilot?'AUTO · ':''}${rb.result?rb.result.toUpperCase():'DESCENT'} · ${formatDistance(Math.max(0,rb.altitude))} · ${Math.abs(rb.vy).toFixed(1)} m/s · fuel ${Math.round(rb.fuel/rb.fuelMax*100)}%`,x0+34,H-64);
+  const guidePhase=landingPhase(rb);
+  const guideLabel=guidePhase==='boostback'?'PRESS BOOSTBACK':guidePhase==='landing'?'LANDING BURN + LEGS':guidePhase==='flip'?'TURN ENGINES DOWN':rb.result?rb.result.toUpperCase():'WAIT';
+  ctx.fillText(`${rb.autopilot?'AUTO · ':''}${guideLabel} · ${formatDistance(Math.max(0,rb.altitude))} · ${Math.abs(rb.vy).toFixed(1)} m/s · fuel ${Math.round(rb.fuel/rb.fuelMax*100)}%`,x0+34,H-64);
   ctx.restore();
 }
 
@@ -3840,6 +4020,26 @@ document.getElementById('flipBoosterBtn').onclick=flipBooster;
 document.getElementById('boostbackBtn').onclick=toggleBoostback;
 document.getElementById('landingBurnBtn').onclick=toggleLandingBurn;
 document.getElementById('deployLegsBtn').onclick=deployLegs;
+// Touch-friendly hold-to-burn support. Click still toggles on desktop, but pressing feels like a landing game.
+function bindHoldBurn(btnId, prop, phaseName){
+  const btn=document.getElementById(btnId); if(!btn) return;
+  const start=e=>{
+    const rb=launchState?.reusable;
+    if(!rb || rb.result || rb.autopilot || landingPhase(rb)!==phaseName) return;
+    rb[prop]=true; updateLandingControls();
+  };
+  const stop=e=>{
+    const rb=launchState?.reusable;
+    if(!rb || rb.result || rb.autopilot) return;
+    rb[prop]=false; updateLandingControls();
+  };
+  btn.addEventListener('pointerdown',start);
+  btn.addEventListener('pointerup',stop);
+  btn.addEventListener('pointercancel',stop);
+  btn.addEventListener('pointerleave',stop);
+}
+bindHoldBurn('boostbackBtn','boostbackBurn','boostback');
+bindHoldBurn('landingBurnBtn','landingBurn','landing');
 document.getElementById('closeBtn').onclick=()=>{
   document.getElementById('launchOverlay').classList.remove('open');
   cancelAnimationFrame(mixAnim);cancelAnimationFrame(flightId);
