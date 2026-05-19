@@ -96,6 +96,41 @@ header{
 .mode-easy .parts-scroll.school-guided{max-height:240px}
 .mode-easy .mode-panel + .rocket-school-panel + .panel .panel-header span:first-child::after{content:' · OPTIONAL';color:var(--muted);font-size:10px;letter-spacing:.08em}
 
+
+/* ─── REUSABLE BOOSTER / LANDING CHALLENGE PANEL ─── */
+.landing-challenge-panel{display:none}
+.mode-landing .landing-challenge-panel{display:block}
+.landing-card{
+  background:linear-gradient(180deg,rgba(245,196,0,.08),rgba(66,180,255,.055));
+  border:1px solid rgba(245,196,0,.24);border-radius:10px;padding:10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)
+}
+.landing-card-title{font-family:var(--font-hud);font-size:18px;letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
+.landing-card-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);line-height:1.45;margin-bottom:10px}
+.landing-section-title{font-family:var(--font-hud);font-size:11px;letter-spacing:.1em;color:#dcecff;margin:10px 0 6px}
+.landing-mission-grid{display:grid;grid-template-columns:1fr;gap:6px}
+.landing-mission-btn{
+  text-align:left;border:1px solid var(--border);background:rgba(6,14,27,.68);color:var(--text);
+  border-radius:8px;padding:8px 9px;cursor:pointer;font-family:var(--font-mono);font-size:10px;line-height:1.35;
+}
+.landing-mission-btn b{display:block;font-family:var(--font-hud);font-size:14px;letter-spacing:.05em;color:var(--text)}
+.landing-mission-btn small{display:block;color:var(--muted);font-size:10px;margin-top:2px}
+.landing-mission-btn.active{border-color:var(--accent);background:rgba(245,196,0,.13);box-shadow:0 0 12px rgba(245,196,0,.12)}
+.landing-choice-row{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.landing-choice-row.two{grid-template-columns:repeat(2,1fr)}
+.landing-choice{
+  border:1px solid var(--border);border-radius:8px;background:rgba(3,9,18,.55);color:var(--muted);
+  padding:7px 5px;cursor:pointer;font-family:var(--font-hud);font-size:12px;letter-spacing:.04em;text-align:center;
+}
+.landing-choice.active{border-color:var(--green);color:var(--green);background:rgba(0,232,122,.1)}
+.landing-launch-row{display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px}
+.landing-summary{
+  font-family:var(--font-mono);font-size:10px;color:#dcecff;line-height:1.45;background:rgba(4,10,20,.66);
+  border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:8px
+}
+.landing-controls .btn-secondary.guided-hidden{display:none}
+
+
 /* ─── LAYOUT ─── */
 .app{display:grid;grid-template-columns:280px 1fr 300px;gap:12px;padding:12px;max-width:1460px;margin:auto;min-height:calc(100vh - 60px)}
 .col{display:flex;flex-direction:column;gap:12px}
@@ -444,6 +479,31 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 .hud-val{color:var(--text);font-size:13px}
 .hud-val.good{color:var(--green)} .hud-val.warn{color:var(--accent)} .hud-val.bad{color:var(--red)}
 
+.hud-cell.optional-hidden{display:none}
+.hud-cell.required .hud-key::after{content:' · REQUIRED';font-size:7px;color:rgba(245,196,0,.7);margin-left:4px}
+.display-panel{
+  border-bottom:1px solid rgba(255,255,255,.1);
+  background:rgba(7,14,24,.96);
+  padding:8px 10px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.display-panel.collapsed .display-options-body{display:none}
+.display-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.display-title{font-family:var(--font-hud);font-size:11px;letter-spacing:.1em;color:var(--accent)}
+.display-title small{display:block;font-family:var(--font-body);font-size:10px;letter-spacing:0;color:var(--muted);margin-top:2px}
+.display-options-body{display:grid;grid-template-columns:1.05fr 1.2fr;gap:10px;align-items:start}
+.display-presets,.display-toggles{display:flex;gap:6px;flex-wrap:wrap}
+.display-chip{
+  border:1px solid var(--border2);background:var(--panel2);color:var(--text);
+  border-radius:999px;padding:7px 10px;font-family:var(--font-hud);font-size:9px;letter-spacing:.07em;cursor:pointer
+}
+.display-chip.active{background:var(--accent);color:#100b00;border-color:rgba(255,255,255,.25)}
+.display-chip.required{opacity:.72;cursor:not-allowed;background:rgba(245,196,0,.16);color:var(--accent)}
+.display-toggle{display:flex;align-items:center;gap:6px;border:1px solid var(--border2);border-radius:8px;padding:7px 9px;background:rgba(255,255,255,.035);font-family:var(--font-body);font-size:12px;color:var(--text);cursor:pointer}
+.display-toggle input{accent-color:#f5c400}
+.display-note{font-size:11px;color:var(--muted);line-height:1.35}
+@media(max-width:780px){.display-options-body{grid-template-columns:1fr}.display-panel{padding:7px}.display-chip{font-size:8px;padding:7px 8px}}
+
 .burn-track{height:10px;background:#040c1a;border-radius:0;position:relative;overflow:hidden}
 .burn-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .1s linear}
 
@@ -503,7 +563,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
           <button class="mode-btn" data-mode="easy">EASY MODE<small>starter parts · wider timing window</small></button>
           <button class="mode-btn" data-mode="career">CAREER MODE<small>altitude progression · part unlocks</small></button>
           <button class="mode-btn" data-mode="sandbox">FULLY UNLOCKED<small>all parts · no career unlock impact</small></button>
-          <button class="mode-btn" data-mode="landing">REUSABLE BOOSTER<small>split-screen landing challenge</small></button>
+          <button class="mode-btn" data-mode="landing">LANDING CHALLENGE<small>preset missions · reusable booster</small></button>
         </div>
         <div class="mode-desc" id="modeDesc"></div>
       </div>
@@ -514,6 +574,14 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
         <span id="schoolProgressLabel" style="color:var(--muted);font-size:10px">LEVEL 1</span>
       </div>
       <div class="panel-body" id="rocketSchoolBody"></div>
+    </div>
+
+    <div class="panel landing-challenge-panel" id="landingChallengePanel">
+      <div class="panel-header">
+        <span>LANDING CHALLENGE</span>
+        <span id="landingMissionLabel" style="color:var(--muted);font-size:10px">TRAINER</span>
+      </div>
+      <div class="panel-body" id="landingChallengeBody"></div>
     </div>
     <div class="panel" style="flex:1">
       <div class="panel-header">
@@ -581,15 +649,22 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 <div class="launch-overlay" id="launchOverlay">
   <div class="launch-modal">
     <canvas id="sky" width="1020" height="440"></canvas>
-    <div class="hud-strip">
-      <div class="hud-cell"><span class="hud-key">STAGE</span><span class="hud-val" id="hudStage">—</span></div>
-      <div class="hud-cell"><span class="hud-key">ALTITUDE</span><span class="hud-val" id="hudAlt">0 m</span></div>
-      <div class="hud-cell"><span class="hud-key">VELOCITY</span><span class="hud-val" id="hudSpeed">0 m/s</span></div>
-      <div class="hud-cell"><span class="hud-key">LIVE MASS</span><span class="hud-val" id="hudMass">—</span></div>
-      <div class="hud-cell"><span class="hud-key">ZONE</span><span class="hud-val" id="hudZone">Launch Pad</span></div>
-      <div class="hud-cell"><span class="hud-key">T/W LIVE</span><span class="hud-val" id="hudTW">—</span></div>
-      <div class="hud-cell"><span class="hud-key">FUEL LEFT</span><span class="hud-val" id="hudFuel">—</span></div>
-      <div class="hud-cell"><span class="hud-key">SCORE</span><span class="hud-val" id="hudScore">0</span></div>
+    <div class="display-panel collapsed" id="displayPanel">
+      <div class="display-panel-head">
+        <div class="display-title">DISPLAY OPTIONS<small>Altitude and fuel stay on. Choose how much else you want to see.</small></div>
+        <button class="btn-secondary" id="displayToggleBtn" type="button">⚙ DISPLAY OPTIONS</button>
+      </div>
+      <div class="display-options-body" id="displayOptionsBody"></div>
+    </div>
+    <div class="hud-strip" id="hudStrip">
+      <div class="hud-cell required" data-display="altitude"><span class="hud-key">ALTITUDE</span><span class="hud-val" id="hudAlt">0 m</span></div>
+      <div class="hud-cell required" data-display="fuel"><span class="hud-key">FUEL LEFT</span><span class="hud-val" id="hudFuel">—</span></div>
+      <div class="hud-cell" data-display="stage"><span class="hud-key">STAGE</span><span class="hud-val" id="hudStage">—</span></div>
+      <div class="hud-cell" data-display="speed"><span class="hud-key">VELOCITY</span><span class="hud-val" id="hudSpeed">0 m/s</span></div>
+      <div class="hud-cell" data-display="mass"><span class="hud-key">LIVE MASS</span><span class="hud-val" id="hudMass">—</span></div>
+      <div class="hud-cell" data-display="zone"><span class="hud-key">ZONE</span><span class="hud-val" id="hudZone">Launch Pad</span></div>
+      <div class="hud-cell" data-display="tw"><span class="hud-key">T/W LIVE</span><span class="hud-val" id="hudTW">—</span></div>
+      <div class="hud-cell" data-display="score"><span class="hud-key">SCORE</span><span class="hud-val" id="hudScore">0</span></div>
     </div>
     <div class="burn-track"><div class="burn-fill" id="burnFill"></div></div>
     <div class="launch-controls">
@@ -1142,11 +1217,128 @@ const MODES = {
     sweetWidth:16, needleSpeed:2.1, minIgnitionQuality:.35, stageGood:.35, stageLate:.9
   },
   landing:{
-    key:'landing', label:'REUSABLE BOOSTER', bestLabel:'LANDING BEST',
-    desc:'Launch a two-stage rocket, then land Stage 1 on a target pad in a split-screen landing challenge. No Career unlock impact.',
+    key:'landing', label:'LANDING CHALLENGE', bestLabel:'LANDING BEST',
+    desc:'Choose a preset mission, fly the upper stage automatically, then recover Stage 1 on a landing pad or drone ship. No Career unlock impact.',
     sweetWidth:18, needleSpeed:1.85, minIgnitionQuality:.4, stageGood:.45, stageLate:1.05
   }
 };
+
+const LANDING_MISSIONS = {
+  trainer:{
+    key:'trainer', name:'Reusable Trainer', tag:'EASIEST', targetAlt:18000,
+    summary:'Wide pad, extra landing fuel, slow descent. Best first landing.',
+    build:{nose:'Nose_6', stack:['Engine_1','Fuel_1','Engine_5'], fins:['Fin_2','Fin_2']},
+    startX:780, startVx:38, reserveBase:50, targetRadius:115, hardRadius:240
+  },
+  cargo:{
+    key:'cargo', name:'Cargo Mission', tag:'BALANCED', targetAlt:55000,
+    summary:'Heavier upper stage and less landing margin. Good classroom challenge.',
+    build:{nose:'Nose_7', stack:['Engine_7','Fuel_2','Engine_5','Fuel_1'], fins:['Fin_2','Fin_2']},
+    startX:1120, startVx:54, reserveBase:43, targetRadius:90, hardRadius:210
+  },
+  high:{
+    key:'high', name:'High-Altitude Mission', tag:'HARD', targetAlt:100000,
+    summary:'Upper stage needs performance, so landing fuel is tight.',
+    build:{nose:'Nose_7', stack:['Engine_7','Fuel_2','Engine_6','Fuel_1'], fins:['Fin_2','Fin_2']},
+    startX:1400, startVx:68, reserveBase:36, targetRadius:80, hardRadius:190
+  },
+  drone:{
+    key:'drone', name:'Drone Ship Challenge', tag:'ADVANCED', targetAlt:70000,
+    summary:'Smaller ocean target with horizontal drift. Land like a pro.',
+    build:{nose:'Nose_7', stack:['Engine_7','Fuel_1','Engine_5','SRB_4'], fins:['Fin_2','Fin_2']},
+    startX:1650, startVx:78, reserveBase:40, targetRadius:55, hardRadius:145, target:'drone'
+  }
+};
+const LANDING_PAYLOADS = {
+  light:{label:'Light', mass:0, targetBonus:-5000, note:'easier mission'},
+  medium:{label:'Medium', mass:350, targetBonus:0, note:'balanced'},
+  heavy:{label:'Heavy', mass:850, targetBonus:18000, note:'harder mission'}
+};
+const LANDING_FUEL_PLANS = {
+  mission:{label:'Mission', reserveMult:.72, mass:0, note:'more altitude, less landing fuel'},
+  balanced:{label:'Balanced', reserveMult:1, mass:180, note:'safe middle'},
+  landing:{label:'Landing', reserveMult:1.35, mass:420, note:'more landing fuel, heavier rocket'}
+};
+const LANDING_TARGETS = {
+  pad:{label:'Landing Pad', radiusMult:1, driftMult:1, note:'wide ground target'},
+  drone:{label:'Drone Ship', radiusMult:.62, driftMult:1.25, note:'small ocean target'}
+};
+let landingSettings;
+try{ landingSettings = JSON.parse(localStorage.getItem('slLandingSettings')||'{}') || {}; }catch(e){ landingSettings = {}; }
+landingSettings = Object.assign({mission:'trainer',payload:'medium',fuelPlan:'balanced',target:'pad',pilot:'manual'}, landingSettings);
+function saveLandingSettings(){ localStorage.setItem('slLandingSettings',JSON.stringify(landingSettings)); }
+function landingMission(){ return LANDING_MISSIONS[landingSettings.mission] || LANDING_MISSIONS.trainer; }
+function currentLandingProfile(){
+  const mission=landingMission();
+  const payload=LANDING_PAYLOADS[landingSettings.payload] || LANDING_PAYLOADS.medium;
+  const fuel=LANDING_FUEL_PLANS[landingSettings.fuelPlan] || LANDING_FUEL_PLANS.balanced;
+  const target=LANDING_TARGETS[landingSettings.target] || LANDING_TARGETS.pad;
+  const targetAlt=Math.max(5000, mission.targetAlt + payload.targetBonus);
+  return {
+    mission,payload,fuel,target,pilot:landingSettings.pilot,
+    targetAlt,
+    payloadMass:payload.mass,
+    reserveMass:fuel.mass,
+    reserveFuel:mission.reserveBase*fuel.reserveMult,
+    startX:mission.startX*target.driftMult,
+    startVx:mission.startVx*target.driftMult,
+    targetRadius:mission.targetRadius*target.radiusMult,
+    hardRadius:mission.hardRadius*target.radiusMult,
+    targetKind:landingSettings.target
+  };
+}
+function landingExtraMass(){
+  if(gameMode!=='landing') return 0;
+  const profile=currentLandingProfile();
+  return (profile.payloadMass||0)+(profile.reserveMass||0);
+}
+function setLandingOption(kind,value){
+  landingSettings[kind]=value;
+  saveLandingSettings();
+  renderLandingChallenge();
+  renderStats();
+}
+function loadLandingMission(){
+  if(gameMode!=='landing') setGameMode('landing');
+  const mission=landingMission();
+  build=JSON.parse(JSON.stringify(mission.build));
+  sanitizeBuildForMode();
+  renderAll();
+}
+function renderLandingChallenge(){
+  const panel=document.getElementById('landingChallengePanel');
+  const body=document.getElementById('landingChallengeBody');
+  const label=document.getElementById('landingMissionLabel');
+  if(!panel||!body) return;
+  if(gameMode!=='landing') return;
+  const profile=currentLandingProfile();
+  if(label) label.textContent=profile.mission.name.toUpperCase();
+  const missionButtons=Object.values(LANDING_MISSIONS).map(m=>`<button class="landing-mission-btn ${landingSettings.mission===m.key?'active':''}" onclick="setLandingOption('mission','${m.key}')">
+    <b>${m.name}</b><small>${m.tag} · target ${formatDistance(m.targetAlt)} · ${m.summary}</small>
+  </button>`).join('');
+  const choiceRow=(kind,items,extraClass='')=>`<div class="landing-choice-row ${extraClass}">${Object.entries(items).map(([key,item])=>`<button class="landing-choice ${landingSettings[kind]===key?'active':''}" onclick="setLandingOption('${kind}','${key}')">${item.label}</button>`).join('')}</div>`;
+  const pilotRow=`<div class="landing-choice-row two">
+    <button class="landing-choice ${landingSettings.pilot==='auto'?'active':''}" onclick="setLandingOption('pilot','auto')">Watch Autopilot</button>
+    <button class="landing-choice ${landingSettings.pilot==='manual'?'active':''}" onclick="setLandingOption('pilot','manual')">Try Myself</button>
+  </div>`;
+  body.innerHTML=`<div class="landing-card">
+    <div class="landing-card-title">Landing Challenge</div>
+    <div class="landing-card-sub">Pick a mission, choose a payload and fuel plan, then launch. After Stage 1 separates, the landing view opens and the booster recovery begins.</div>
+    <div class="landing-section-title">MISSION</div>
+    <div class="landing-mission-grid">${missionButtons}</div>
+    <div class="landing-section-title">PAYLOAD</div>${choiceRow('payload',LANDING_PAYLOADS)}
+    <div class="landing-section-title">FUEL PLAN</div>${choiceRow('fuelPlan',LANDING_FUEL_PLANS)}
+    <div class="landing-section-title">TARGET</div>${choiceRow('target',LANDING_TARGETS,'two')}
+    <div class="landing-section-title">PILOT</div>${pilotRow}
+    <div class="landing-launch-row">
+      <button class="school-big-btn" onclick="loadLandingMission()">LOAD SELECTED MISSION</button>
+      <button class="school-big-btn secondary" onclick="openLaunch()">▶ START LANDING CHALLENGE</button>
+    </div>
+    <div class="landing-summary"><b>${profile.mission.name}</b> · ${profile.payload.label} payload · ${profile.fuel.label} fuel plan · ${profile.target.label}<br>
+      Upper-stage target: <b>${formatDistance(profile.targetAlt)}</b>. Booster target window: <b>${Math.round(profile.targetRadius)} m</b>. ${profile.pilot==='auto'?'Autopilot will demonstrate the sequence.':'You will fly the landing manually.'}</div>
+  </div>`;
+}
+
 let gameMode = localStorage.getItem('slMode') || 'career';
 if(!MODES[gameMode]) gameMode='career';
 let modeBests = {};
@@ -1154,6 +1346,54 @@ try{ modeBests = JSON.parse(localStorage.getItem('slModeBests')||'{}') || {}; }c
 let careerBest = Number(localStorage.getItem('slBest')||0);
 let best = gameMode==='career' ? careerBest : Number(modeBests[gameMode]||0);
 let unlockedBest = Number(localStorage.getItem('slUnlockedBest')||careerBest); // tracks what was unlocked in career
+
+// ══════════════════════════════════════════════════════════════
+//  DISPLAY OPTIONS
+// ══════════════════════════════════════════════════════════════
+const DISPLAY_PRESETS = {
+  clean:{label:'Clean View', desc:'Altitude + fuel only.', values:{stage:false,speed:false,mass:false,zone:false,tw:false,score:false,ruler:false,tips:false}},
+  pilot:{label:'Pilot View', desc:'What you need for flying and staging.', values:{stage:true,speed:true,mass:false,zone:false,tw:false,score:false,ruler:true,tips:true}},
+  engineer:{label:'Engineer View', desc:'Physics details for testing designs.', values:{stage:true,speed:true,mass:true,zone:true,tw:true,score:true,ruler:true,tips:true}},
+  mission:{label:'Mission View', desc:'Goals, stage status, and essential flight data.', values:{stage:true,speed:false,mass:false,zone:true,tw:false,score:true,ruler:false,tips:true}}
+};
+const DISPLAY_TOGGLES = [
+  ['stage','Stage Status'],['speed','Velocity'],['mass','Live Mass'],['zone','Flight Zone'],
+  ['tw','Thrust / Weight'],['score','Score'],['ruler','Altitude Ruler'],['tips','Mission Tips']
+];
+let displaySettings;
+try{displaySettings=JSON.parse(localStorage.getItem('slDisplaySettings')||'{}')||{};}catch(e){displaySettings={};}
+displaySettings=Object.assign({preset:'pilot'}, DISPLAY_PRESETS[displaySettings.preset]?.values || DISPLAY_PRESETS.pilot.values, displaySettings);
+function saveDisplaySettings(){localStorage.setItem('slDisplaySettings',JSON.stringify(displaySettings));}
+function setDisplayPreset(key){
+  const preset=DISPLAY_PRESETS[key]||DISPLAY_PRESETS.pilot;
+  displaySettings=Object.assign({preset:key}, preset.values);
+  saveDisplaySettings();
+  renderDisplayOptions();
+  applyDisplaySettings();
+}
+function toggleDisplayOption(key){
+  displaySettings[key]=!displaySettings[key];
+  displaySettings.preset='custom';
+  saveDisplaySettings();
+  renderDisplayOptions();
+  applyDisplaySettings();
+}
+function renderDisplayOptions(){
+  const body=document.getElementById('displayOptionsBody');
+  if(!body) return;
+  const presets=Object.entries(DISPLAY_PRESETS).map(([key,p])=>`<button type="button" class="display-chip ${displaySettings.preset===key?'active':''}" onclick="setDisplayPreset('${key}')" title="${p.desc}">${p.label}</button>`).join('');
+  const toggles=DISPLAY_TOGGLES.map(([key,label])=>`<label class="display-toggle"><input type="checkbox" ${displaySettings[key]?'checked':''} onchange="toggleDisplayOption('${key}')">${label}</label>`).join('');
+  body.innerHTML=`<div><div class="display-presets"><button type="button" class="display-chip required">Altitude · Required</button><button type="button" class="display-chip required">Fuel · Required</button>${presets}</div><div class="display-note">Use Clean View for a quiet flight, Pilot View for staging, Engineer View for testing, or Mission View for challenges.</div></div><div class="display-toggles">${toggles}</div>`;
+}
+function applyDisplaySettings(){
+  document.querySelectorAll('.hud-cell[data-display]').forEach(cell=>{
+    const key=cell.getAttribute('data-display');
+    const required=(key==='altitude'||key==='fuel');
+    cell.classList.toggle('optional-hidden', !required && !displaySettings[key]);
+  });
+  const rb=document.getElementById('resultBar');
+  if(rb) rb.style.display=(displaySettings.tips===false && !launchState?.done)?'none':'';
+}
 
 const MILESTONES = [
   {alt:1000,      label:'1 km',       icon:'🌄'},
@@ -1226,6 +1466,7 @@ function updateModeUI(){
   const desc=document.getElementById('modeDesc');
   if(desc) desc.innerHTML=`<span class="mode-pill">${modeConfig().label}</span>${modeConfig().desc}`;
   updateModeAssistVisuals();
+  renderLandingChallenge();
 }
 function setGameMode(mode){
   if(!MODES[mode]) return;
@@ -1236,6 +1477,7 @@ function setGameMode(mode){
   updateModeUI();
   renderParts();
   renderRocketSchool();
+  renderLandingChallenge();
   renderAll();
 }
 function initModeUI(){
@@ -1251,6 +1493,7 @@ function selectSchoolLesson(i){
   activeSchoolLesson=i;
   localStorage.setItem(ROCKET_SCHOOL_SELECTED_KEY,activeSchoolLesson);
   renderRocketSchool();
+  renderLandingChallenge();
 }
 function loadSchoolLesson(i=activeSchoolLesson){
   if(gameMode!=='easy') setGameMode('easy');
@@ -1278,7 +1521,7 @@ function renderRocketSchool(){
   const parts=document.getElementById('parts');
   if(parts) parts.classList.toggle('school-guided',gameMode==='easy');
   const sample=document.getElementById('sampleBtn');
-  if(sample) sample.textContent=gameMode==='easy'?'⚡ LOAD LESSON ROCKET':'⚡ SAMPLE BUILD';
+  if(sample) sample.textContent=gameMode==='easy'?'⚡ LOAD LESSON ROCKET':(gameMode==='landing'?'⚡ LOAD SELECTED MISSION':'⚡ SAMPLE BUILD');
   if(!panel||!body||gameMode!=='easy') return;
   const l=currentSchoolLesson();
   if(label) label.textContent=`LEVEL ${easySchoolLevel+1} / ${ROCKET_SCHOOL_LESSONS.length}`;
@@ -1446,7 +1689,8 @@ function buildSample(){
     return;
   }
   if(gameMode==='landing'){
-    build={nose:'Nose_6', stack:['Engine_7','Fuel_1','Engine_5','Fuel_1'], fins:['Fin_2','Fin_2']};
+    loadLandingMission();
+    return;
   } else if(gameMode==='sandbox'){
     build={nose:'Nose_7', stack:['Engine_1','Fuel_2','Engine_6','SRB_1'], fins:['Fin_2','Fin_2']};
   } else {
@@ -1571,6 +1815,7 @@ function fuelRatioForPart(partId){
 function stackMassForFlight(){
   const ids=[...build.stack,...build.fins]; if(build.nose)ids.push(build.nose);
   let base=0; ids.map(getPart).filter(Boolean).forEach(p=>{base+=(p.weight||0)+(p.weightFuel||0);});
+  base += landingExtraMass();
   if(!launchState) return {total:base,base,burnedFuel:0,droppedMass:0,massLost:0};
   let burnedFuel=0, droppedMass=0;
   launchState.stages.forEach(s=>{
@@ -2178,6 +2423,9 @@ function renderAll(){
   renderList();
   renderMilestones();
   renderRocketSchool();
+  renderLandingChallenge();
+  renderDisplayOptions();
+  applyDisplaySettings();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2847,10 +3095,10 @@ function drawScene(rocketY,tilt,burning,finished=false){
   }
 
   drawReusableBoosterPanel();
-  drawAltScale();
+  if(displaySettings.ruler) drawAltScale();
 
   // Event text
-  if(launchState?.events?.length){
+  if(displaySettings.tips!==false && launchState?.events?.length){
     const ev=launchState.events[0];
     const ec=ev.type==='bad'?'#ff8fab':(ev.type==='good'?'#9bf6c3':'#ffd166');
     ctx.font='bold 15px "Barlow Condensed",sans-serif';
@@ -2963,6 +3211,7 @@ function updateHUD(){
   }
 
   document.getElementById('burnFill').style.width=st?`${Math.max(0,Math.min(100,st.remaining/st.burn*100))}%`:'0%';
+  applyDisplaySettings();
 
   // Coast controls
   const allSpent=launchState.stages.every(s=>s.spent);
@@ -2997,22 +3246,47 @@ function checkMilestones(){
 // ── Reusable Booster Landing Challenge ───────────────────────
 function isLandingMode(){ return gameMode==='landing'; }
 function landingControlsEl(){ return document.getElementById('landingControls'); }
+function landingPhase(rb){
+  if(!rb || rb.result) return 'result';
+  if(rb.autopilot) return 'autopilot';
+  if(!rb.flipped) return 'flip';
+  if(rb.altitude > 650 && Math.abs(rb.x) > rb.targetRadius*1.15) return 'boostback';
+  if(rb.altitude < 520) return 'landing';
+  return 'coast';
+}
+function setLandingButton(id, show, enabled, active=false){
+  const b=document.getElementById(id); if(!b) return;
+  b.classList.toggle('guided-hidden', !show);
+  b.disabled=!enabled;
+  b.classList.toggle('active', !!active);
+}
 function updateLandingControls(){
   const box=landingControlsEl(); if(!box) return;
   const rb=launchState?.reusable;
   const show=isLandingMode() && !!rb && !rb.dismissed;
   box.classList.toggle('open', show);
   const status=document.getElementById('landingStatus');
-  ['flipBoosterBtn','boostbackBtn','landingBurnBtn','deployLegsBtn'].forEach(id=>{
-    const b=document.getElementById(id);
-    if(b) b.disabled=!show || !rb || !!rb.result;
-  });
-  const boost=document.getElementById('boostbackBtn'); if(boost) boost.classList.toggle('active',!!rb?.boostbackBurn);
-  const land=document.getElementById('landingBurnBtn'); if(land) land.classList.toggle('active',!!rb?.landingBurn);
-  const legs=document.getElementById('deployLegsBtn'); if(legs) legs.classList.toggle('active',!!rb?.legs);
-  const flip=document.getElementById('flipBoosterBtn'); if(flip) flip.classList.toggle('active',!!rb?.flipped);
+  const title=document.querySelector('.landing-title small');
+  if(!show){
+    ['flipBoosterBtn','boostbackBtn','landingBurnBtn','deployLegsBtn'].forEach(id=>setLandingButton(id,false,false,false));
+    if(status) status.textContent='';
+    return;
+  }
+  const phase=landingPhase(rb);
+  const done=!!rb.result;
+  const auto=!!rb.autopilot;
+  setLandingButton('flipBoosterBtn', phase==='flip'||auto||done, !done && !auto && phase==='flip', rb.flipped);
+  setLandingButton('boostbackBtn', phase==='boostback'||phase==='coast'||auto||done, !done && !auto && (phase==='boostback'||phase==='coast'), rb.boostbackBurn);
+  setLandingButton('landingBurnBtn', phase==='landing'||auto||done, !done && !auto && phase==='landing', rb.landingBurn);
+  setLandingButton('deployLegsBtn', phase==='landing'||auto||done, !done && !auto && phase==='landing', rb.legs);
+  if(title){
+    title.textContent = auto ? 'Autopilot is demonstrating booster recovery.'
+      : phase==='flip' ? 'Step 1: flip the booster engines-down.'
+      : phase==='boostback' ? 'Step 2: use boostback to aim for the target.'
+      : phase==='landing' ? 'Step 3: deploy legs and slow down for touchdown.'
+      : 'Coast and watch the landing window.';
+  }
   if(!status) return;
-  if(!show){ status.textContent=''; return; }
   const fuelPct=Math.max(0,Math.round((rb.fuel/Math.max(1,rb.fuelMax))*100));
   const speed=Math.abs(rb.vy).toFixed(1);
   const drift=Math.abs(rb.x).toFixed(0);
@@ -3021,25 +3295,46 @@ function updateLandingControls(){
     status.textContent=`${rb.result.toUpperCase()} · touchdown complete · returning to normal view in ${remain}s`;
     return;
   }
-  status.textContent=`Controls active: flip, boostback, landing burn, deploy legs · altitude ${formatDistance(Math.max(0,rb.altitude))} · descent ${speed} m/s · target error ${drift} m · landing fuel ${fuelPct}%`;
+  if(auto){
+    status.textContent=`Autopilot active · watch the sequence: flip → boostback → landing burn → legs · altitude ${formatDistance(Math.max(0,rb.altitude))} · fuel ${fuelPct}%`;
+  } else if(phase==='flip'){
+    status.textContent=`Step 1: press FLIP BOOSTER. The engines must point down before landing.`;
+  } else if(phase==='boostback'){
+    status.textContent=`Step 2: use BOOSTBACK BURN to reduce target error. Current error ${drift} m.`;
+  } else if(phase==='landing'){
+    status.textContent=`Step 3: DEPLOY LEGS and use LANDING BURN. Descent ${speed} m/s · fuel ${fuelPct}%.`;
+  } else {
+    status.textContent=`Coasting toward target · altitude ${formatDistance(Math.max(0,rb.altitude))} · descent ${speed} m/s · target error ${drift} m · fuel ${fuelPct}%`;
+  }
 }
-function toggleBoostback(){ if(!launchState?.reusable || launchState.reusable.result) return; launchState.reusable.boostbackBurn=!launchState.reusable.boostbackBurn; updateLandingControls(); }
-function toggleLandingBurn(){ if(!launchState?.reusable || launchState.reusable.result) return; launchState.reusable.landingBurn=!launchState.reusable.landingBurn; updateLandingControls(); }
-function flipBooster(){ if(!launchState?.reusable || launchState.reusable.result) return; launchState.reusable.flipped=true; launchState.reusable.angle=Math.PI; addEvent('Booster flipped for reentry.','good'); updateLandingControls(); }
-function deployLegs(){ if(!launchState?.reusable || launchState.reusable.result) return; launchState.reusable.legs=true; addEvent('Landing legs deployed.','good'); updateLandingControls(); }
+function toggleBoostback(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.boostbackBurn=!launchState.reusable.boostbackBurn; updateLandingControls(); }
+function toggleLandingBurn(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.landingBurn=!launchState.reusable.landingBurn; updateLandingControls(); }
+function flipBooster(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.flipped=true; launchState.reusable.angle=Math.PI; addEvent('Booster flipped for reentry.','good'); updateLandingControls(); }
+function deployLegs(){ if(!launchState?.reusable || launchState.reusable.result || launchState.reusable.autopilot) return; launchState.reusable.legs=true; addEvent('Landing legs deployed.','good'); updateLandingControls(); }
 function createReusableBooster(stage, fins){
   if(!isLandingMode() || !launchState || !stage || launchState.reusable) return;
-  const fuelReserve=Math.max(22, Math.min(70, (stage.fuelMass||900)/75));
+  const profile=launchState.landingProfile || currentLandingProfile();
+  const fuelReserve=Math.max(20, Math.min(88, profile.reserveFuel || 45));
   launchState.reusable={
     active:true, result:null, score:0, parts:stage.parts.slice(), fins:(fins||[]).slice(),
-    altitude:Math.max(1400, launchState.altitude*.72), maxAltitude:Math.max(1400, launchState.altitude*.72),
-    x:1450, vx:72, vy:Math.max(20,launchState.velocity*.22), angle:0, spin:0,
+    altitude:Math.max(1500, launchState.altitude*.72), maxAltitude:Math.max(1500, launchState.altitude*.72),
+    x:profile.startX || 1200, vx:profile.startVx || 60, vy:Math.max(20,launchState.velocity*.2), angle:0, spin:0,
     flipped:false, legs:false, boostbackBurn:false, landingBurn:false,
-    fuel:fuelReserve, fuelMax:fuelReserve, landed:false, age:0, resultAge:0, dismissed:false
+    fuel:fuelReserve, fuelMax:fuelReserve, landed:false, age:0, resultAge:0, dismissed:false,
+    targetRadius:profile.targetRadius || 95, hardRadius:profile.hardRadius || 220,
+    targetKind:profile.targetKind || 'pad', autopilot:profile.pilot==='auto', missionName:profile.mission?.name || 'Landing Challenge'
   };
   addEvent('Landing challenge active: recover Stage 1.','good');
-  setResult('<div class="result-icon">🎯</div><div><div class="result-cue stage-cue">Reusable Booster Mode: keep the upper stage flying, then land Stage 1 on the target pad.</div></div>');
+  setResult(`<div class="result-icon">🎯</div><div><div class="result-cue stage-cue">${launchState.reusable.missionName}: upper stage is automatic now. Focus on landing Stage 1.</div></div>`);
   updateLandingControls();
+}
+function updateAutopilot(rb){
+  if(!rb.autopilot || rb.result) return;
+  rb.flipped=true;
+  rb.angle=Math.PI;
+  rb.boostbackBurn = rb.altitude>520 && Math.abs(rb.x)>Math.max(45, rb.targetRadius*.45) && rb.fuel>6;
+  rb.landingBurn = rb.altitude<520 && Math.abs(rb.vy)>4.8 && rb.fuel>0;
+  rb.legs = rb.altitude<320;
 }
 function updateReusableBooster(dt){
   const rb=launchState?.reusable; if(!rb || rb.dismissed) return;
@@ -3049,25 +3344,23 @@ function updateReusableBooster(dt){
     updateLandingControls();
     return;
   }
+  updateAutopilot(rb);
   rb.age+=dt; rb.maxAltitude=Math.max(rb.maxAltitude,rb.altitude);
   const g=9.81;
   let ax=0, ay=-g;
-  // Stable falling attitude only after the flip. Otherwise it tumbles and wastes control authority.
   const control=rb.flipped?1:.28;
   if(rb.boostbackBurn && rb.fuel>0){
     const dir=rb.x>0?-1:1;
-    ax += dir*42*control;
+    ax += dir*(rb.autopilot?50:42)*control;
     ay += 3*control;
-    rb.fuel=Math.max(0,rb.fuel-dt*2.0);
+    rb.fuel=Math.max(0,rb.fuel-dt*(rb.autopilot?1.75:2.0));
   }
   if(rb.landingBurn && rb.fuel>0){
-    ay += (rb.flipped?28:11);
-    // Landing burn also damps sideways drift a little.
-    ax += -Math.sign(rb.vx)*Math.min(Math.abs(rb.vx)*.55, 18);
-    rb.fuel=Math.max(0,rb.fuel-dt*3.2);
+    ay += (rb.flipped?30:11);
+    ax += -Math.sign(rb.vx)*Math.min(Math.abs(rb.vx)*.6, 20);
+    rb.fuel=Math.max(0,rb.fuel-dt*(rb.autopilot?2.9:3.2));
   }
   if(rb.fuel<=0){ rb.boostbackBurn=false; rb.landingBurn=false; }
-  // mild atmospheric drag
   ax += -rb.vx*.018;
   ay += -rb.vy*.012;
   rb.vx += ax*dt;
@@ -3079,17 +3372,17 @@ function updateReusableBooster(dt){
     rb.altitude=0;
     const touchdown=Math.abs(rb.vy);
     const targetError=Math.abs(rb.x);
-    if(rb.legs && touchdown<9 && targetError<95){
-      rb.result='landed'; rb.score=350+Math.max(0,Math.round(120-targetError))+Math.max(0,Math.round((9-touchdown)*18));
+    if(rb.legs && touchdown<9 && targetError<rb.targetRadius){
+      rb.result='landed'; rb.score=350+Math.max(0,Math.round(rb.targetRadius-targetError))+Math.max(0,Math.round((9-touchdown)*18));
       launchState.landingScore=rb.score;
       addEvent('Booster landed!','good');
       setResult(`<div class="result-icon">🏁</div><div><div class="big">Booster landed!</div><div class="note">Touchdown ${touchdown.toFixed(1)} m/s · target error ${targetError.toFixed(0)} m · landing bonus ${rb.score}.</div></div>`);
-    } else if(rb.legs && touchdown<18 && targetError<220){
+    } else if(rb.legs && touchdown<18 && targetError<rb.hardRadius){
       rb.result='hard landing'; rb.score=100;
       launchState.landingScore=rb.score;
       addEvent('Hard landing.','bad');
       setResult(`<div class="result-icon">⚠️</div><div><div class="big">Hard landing</div><div class="note">Touchdown ${touchdown.toFixed(1)} m/s. Slow it down earlier and aim closer to the pad.</div></div>`);
-    } else if(targetError>=220){
+    } else if(targetError>=rb.hardRadius){
       rb.result='missed target'; rb.score=35;
       launchState.landingScore=rb.score;
       addEvent('Booster missed the pad.','bad');
@@ -3113,30 +3406,34 @@ function drawReusableBoosterPanel(){
   ctx.save();
   ctx.fillStyle='rgba(4,12,25,.86)';ctx.fillRect(x0,0,w,H);
   const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#63b7ee');grad.addColorStop(1,'#c8f2ff');
+  if(rb.targetKind==='drone'){
+    grad.addColorStop(0,'#5fb4ef');grad.addColorStop(1,'#bfeeff');
+  } else {
+    grad.addColorStop(0,'#63b7ee');grad.addColorStop(1,'#c8f2ff');
+  }
   ctx.fillStyle=grad;ctx.fillRect(x0+10,34,w-20,H-72);
   ctx.strokeStyle='rgba(245,196,0,.9)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0,H);ctx.stroke();
   ctx.font='bold 14px "Barlow Condensed",sans-serif';ctx.textAlign='center';ctx.fillStyle='rgba(245,196,0,.98)';
-  ctx.fillText('BOOSTER LANDING',x0+w/2,22);
-  // target pad and ocean/ground
-  ctx.fillStyle='#6fb366';ctx.fillRect(x0+10,ground,w-20,H-ground);
+  ctx.fillText(rb.targetKind==='drone'?'DRONE SHIP LANDING':'BOOSTER LANDING',x0+w/2,22);
   const padX=x0+w/2;
-  ctx.fillStyle='#3a444b';roundRect(ctx,padX-60,ground-10,120,12,5);ctx.fill();
-  ctx.fillStyle='rgba(245,196,0,.9)';ctx.fillRect(padX-36,ground-14,72,4);
-  ctx.font='bold 10px "Share Tech Mono",monospace';ctx.fillStyle='#0a1628';ctx.fillText('TARGET',padX,ground+22);
-  if(!rb){
-    ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='bold 13px "Share Tech Mono",monospace';
-    ctx.fillText('Stage 1 landing begins after separation.',x0+w/2,H/2);
-    ctx.restore();return;
+  if(rb.targetKind==='drone'){
+    ctx.fillStyle='#1d6fa8';ctx.fillRect(x0+10,ground,w-20,H-ground);
+    ctx.fillStyle='rgba(255,255,255,.22)';
+    for(let i=0;i<6;i++){ctx.beginPath();ctx.ellipse(x0+50+i*76,ground+18+(i%2)*10,38,4,0,0,Math.PI*2);ctx.fill();}
+    ctx.fillStyle='#3a444b';roundRect(ctx,padX-46,ground-13,92,15,5);ctx.fill();
+    ctx.fillStyle='rgba(245,196,0,.9)';ctx.fillRect(padX-24,ground-18,48,4);
+  } else {
+    ctx.fillStyle='#6fb366';ctx.fillRect(x0+10,ground,w-20,H-ground);
+    ctx.fillStyle='#3a444b';roundRect(ctx,padX-60,ground-10,120,12,5);ctx.fill();
+    ctx.fillStyle='rgba(245,196,0,.9)';ctx.fillRect(padX-36,ground-14,72,4);
   }
-  const maxX=1700;
+  ctx.font='bold 10px "Share Tech Mono",monospace';ctx.fillStyle='#0a1628';ctx.fillText(rb.targetKind==='drone'?'DRONE SHIP':'TARGET',padX,ground+22);
+  const maxX=1800;
   const bx=padX + Math.max(-w*.42,Math.min(w*.42,(rb.x/maxX)*(w*.42)));
   const top=54, usable=ground-top-24;
   const norm=Math.max(0,Math.min(1,rb.altitude/Math.max(1200,rb.maxAltitude)));
   const by=ground-18 - norm*usable;
-  // projected path
   ctx.strokeStyle='rgba(255,255,255,.32)';ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(bx,by);ctx.quadraticCurveTo((bx+padX)/2,by+60,padX,ground-14);ctx.stroke();ctx.setLineDash([]);
-  // booster
   ctx.save();ctx.translate(bx,by);ctx.rotate(rb.angle);ctx.scale(.42,.42);
   drawRocketAssembly(rb.parts, rb.fins, rb.landingBurn, true, false, 0, [], false);
   if(rb.legs){
@@ -3144,11 +3441,10 @@ function drawReusableBoosterPanel(){
     ctx.beginPath();ctx.moveTo(-25,-8);ctx.lineTo(-62,35);ctx.moveTo(25,-8);ctx.lineTo(62,35);ctx.stroke();
   }
   ctx.restore();
-  // telemetry
   ctx.fillStyle='rgba(5,17,31,.72)';roundRect(ctx,x0+20,H-84,w-40,30,8);ctx.fill();
   ctx.fillStyle=rb.result?(rb.result==='landed'?'#00e87a':'#ff8fab'):'#dcecff';
   ctx.font='bold 11px "Share Tech Mono",monospace';ctx.textAlign='left';
-  ctx.fillText(`${rb.result?rb.result.toUpperCase():'DESCENT'} · ${formatDistance(Math.max(0,rb.altitude))} · ${Math.abs(rb.vy).toFixed(1)} m/s · fuel ${Math.round(rb.fuel/rb.fuelMax*100)}%`,x0+34,H-64);
+  ctx.fillText(`${rb.autopilot?'AUTO · ':''}${rb.result?rb.result.toUpperCase():'DESCENT'} · ${formatDistance(Math.max(0,rb.altitude))} · ${Math.abs(rb.vy).toFixed(1)} m/s · fuel ${Math.round(rb.fuel/rb.fuelMax*100)}%`,x0+34,H-64);
   ctx.restore();
 }
 
@@ -3268,7 +3564,12 @@ function flightStep(now){
       if(launchState.current<launchState.stages.length-1){
         document.getElementById('nextBtn').disabled=false;
         refreshStageButton();
-        setResult(`<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage ${launchState.current+1} burned out — separate and ignite Stage ${launchState.current+2} now!</div></div>`);
+        if(isLandingMode() && launchState.current===0){
+          setResult(`<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage 1 burnout — auto-separating so you can focus on the landing challenge.</div></div>`);
+          setTimeout(()=>{ if(launchState && !launchState.done && launchState.current===0 && launchState.stageWindow) igniteNext(); }, 450);
+        } else {
+          setResult(`<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage ${launchState.current+1} burned out — separate and ignite Stage ${launchState.current+2} now!</div></div>`);
+        }
       } else {
         setResult('<div class="result-icon">🌠</div><div><div class="result-cue stage-cue">Final burnout. Use COAST TO APOGEE to skip the wait.</div></div>');
       }
@@ -3348,7 +3649,7 @@ function igniteStage(i,quality){
 function openLaunch(){
   const stages=buildStages();
   if(!stages.length){alert('Add at least one engine stage first.');return;}
-  if(isLandingMode() && stages.length<2){alert('Reusable Booster Mode needs at least two engine stages. Use SAMPLE BUILD to load a landing challenge rocket.');return;}
+  if(isLandingMode() && stages.length<2){alert('Landing Challenge needs a two-stage preset. Use LOAD SELECTED MISSION first.');return;}
   document.getElementById('launchOverlay').classList.add('open');
 
   launchState={
@@ -3359,6 +3660,7 @@ function openLaunch(){
     gravity:9.81,liveTwr:0,accel:0,startTime:0,initialMass:0,initialFuel:0,
     coastSpeed:1,apogeeAssist:false,sepFlash:0,sepCinematic:0,
     stagingFeedback:[],stagingBonus:0,landingScore:0,reusable:null,
+    landingProfile:isLandingMode()?currentLandingProfile():null,
     tooHeavyWarned:false,
   };
   launchState.initialMass=stackMassForFlight().total;
@@ -3372,13 +3674,15 @@ function openLaunch(){
   const modeNote = gameMode==='easy'
     ? schoolLaunchInstruction()
     : gameMode==='landing'
-    ? 'Reusable Booster Mode: the landing controls appear after Stage 1 separates.'
+    ? 'Landing Challenge: after Stage 1 separates, the upper stage continues automatically while you recover the booster.'
     : gameMode==='sandbox'
     ? 'Fully Unlocked mode will not change Career unlock progress.'
     : 'Career Mode altitude records unlock new parts.';
   const launchVerb=(gameMode==='easy' && activeSchoolLesson<4)?'LAUNCH ROCKET':'IGNITE STAGE 1';
   setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>${modeConfig().label}</b>: Hit <b>${launchVerb}</b> in the <b style="color:var(--green)">green zone</b>. ${modeNote}</div></div>`);
   updateModeAssistVisuals();
+  renderDisplayOptions();
+  applyDisplaySettings();
   updateHUD();
   updateLandingControls();
   drawScene(400,0,false);
@@ -3498,7 +3802,13 @@ function finishFlight(){
     ? ` Staging: ${launchState.stagingFeedback.map(f=>`S${f.stage}→S${f.next} ${f.feedback}`).join('; ')}. Bonus: ${launchState.stagingBonus}.`
     : '';
   const schoolNote = completeSchoolLessonIfReady(altitude);
-  const landingNote = isLandingMode() && launchState.reusable ? ` Landing: ${launchState.reusable.result || 'still descending'}${launchState.landingScore?` · bonus ${launchState.landingScore}`:''}.` : '';
+  const landingNote = isLandingMode() ? (()=>{ 
+    const profile=launchState.landingProfile || currentLandingProfile();
+    const missionOk=altitude>=profile.targetAlt;
+    const rb=launchState.reusable;
+    const booster=rb ? `${rb.result || 'still descending'}${launchState.landingScore?` · bonus ${launchState.landingScore}`:''}` : 'not separated yet';
+    return ` Mission: ${missionOk?'target reached':'target missed'} (${formatDistance(altitude)} / ${formatDistance(profile.targetAlt)}). Booster: ${booster}.`;
+  })() : '';
 
   drawScene(250,0,false,true);
   setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}${stagingNote}${landingNote}${schoolNote}</div></div>`);
@@ -3509,6 +3819,13 @@ function finishFlight(){
 // ══════════════════════════════════════════════════════════════
 //  EVENT LISTENERS
 // ══════════════════════════════════════════════════════════════
+const displayToggleBtn=document.getElementById('displayToggleBtn');
+if(displayToggleBtn){
+  displayToggleBtn.onclick=()=>{
+    const panel=document.getElementById('displayPanel');
+    panel?.classList.toggle('collapsed');
+  };
+}
 document.getElementById('launchBtn').onclick=openLaunch;
 document.getElementById('launchBtn2').onclick=openLaunch;
 document.getElementById('clearBtn').onclick=clearBuild;
