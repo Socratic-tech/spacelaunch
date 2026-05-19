@@ -360,6 +360,23 @@ header{
 .drag-handle{color:var(--accent);opacity:.75;margin-right:7px;font-size:13px;vertical-align:-1px}
 .build-list.drag-ready{outline:1px dashed rgba(245,196,0,.35);outline-offset:4px;border-radius:6px}
 
+.part-card[draggable="true"]{cursor:grab;touch-action:none}
+.part-card[draggable="true"]:active{cursor:grabbing}
+.stage.drag-over .dropzone,.dropzone.drag-over{
+  border-color:rgba(245,196,0,.92);
+  background:rgba(245,196,0,.12);
+  box-shadow:0 0 0 5px rgba(245,196,0,.08), inset 0 0 24px rgba(245,196,0,.12);
+}
+.seg.stack-draggable{cursor:grab;outline:0 solid transparent;transition:filter .12s ease, transform .12s ease}
+.seg.stack-draggable:hover{filter:drop-shadow(0 0 8px rgba(245,196,0,.75)) drop-shadow(0 3px 4px rgba(0,0,0,.3))}
+.seg.stack-draggable.drag-over-top::before,
+.seg.stack-draggable.drag-over-bottom::after{
+  content:"";position:absolute;left:-12px;right:-12px;height:5px;border-radius:999px;background:var(--accent);box-shadow:0 0 10px rgba(245,196,0,.65);z-index:40;
+}
+.seg.stack-draggable.drag-over-top::before{top:-8px}.seg.stack-draggable.drag-over-bottom::after{bottom:-8px}
+.move-mini{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:var(--accent);border-radius:5px;padding:1px 5px;margin-left:4px;cursor:pointer;font-weight:900;line-height:1.1}
+.move-mini:hover{background:rgba(245,196,0,.18)}
+
 /* ─── BUTTONS ─── */
 btn,button{font-family:var(--font-hud);font-size:11px;font-weight:700;letter-spacing:.06em;border:0;border-radius:7px;padding:9px 14px;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s}
 button:active{transform:scale(.97)}
@@ -1721,7 +1738,8 @@ function renderParts(){
     `;
     if(isUnlocked(p)){
       card.onclick=()=>addPart(p.name);
-      card.ondragstart=e=>e.dataTransfer.setData('text/plain',p.name);
+      card.title='Drag this part onto the rocket or Current Build list.';
+      card.ondragstart=e=>setPartDragPayload(e,p.name);
     } else {
       card.title=`Unlock at ${formatDistance(p.earnedAt)} altitude`;
     }
@@ -1768,10 +1786,22 @@ function buildSample(){
 }
 
 // ── Drag-drop onto stage ──
-document.getElementById('dropzone').addEventListener('dragover',e=>e.preventDefault());
-document.getElementById('dropzone').addEventListener('drop',e=>{e.preventDefault();addPart(e.dataTransfer.getData('text/plain'))});
-document.getElementById('stage').addEventListener('dragover',e=>e.preventDefault());
-document.getElementById('stage').addEventListener('drop',e=>{e.preventDefault();addPart(e.dataTransfer.getData('text/plain'))});
+const editorDropzone=document.getElementById('dropzone');
+const editorStage=document.getElementById('stage');
+[editorDropzone, editorStage].forEach(zone=>{
+  zone.addEventListener('dragover',e=>{
+    e.preventDefault();
+    editorStage.classList.add('drag-over');
+    editorDropzone.classList.add('drag-over');
+    e.dataTransfer.dropEffect=e.dataTransfer.types.includes('text/build-stack-index')?'move':'copy';
+  });
+  zone.addEventListener('dragleave',e=>{
+    if(e.relatedTarget && zone.contains(e.relatedTarget)) return;
+    editorStage.classList.remove('drag-over');
+    editorDropzone.classList.remove('drag-over');
+  });
+  zone.addEventListener('drop',e=>handleEditorDrop(e, mainInsertIndexFromStageY(e)));
+});
 
 function isSideBoosterPart(p){ return !!p && p.pieceType === 'SRBPiece'; }
 function mainStackIds(ids=build.stack){ return (ids||[]).filter(id=>!isSideBoosterPart(getPart(id))); }
@@ -2232,6 +2262,80 @@ function renderSideBoostersDOM(mount, layout, boosters){
   });
 }
 
+
+function actualStackIndexForMainVisualIndex(visualIndex){
+  let seen=0;
+  for(let i=0;i<build.stack.length;i++){
+    const p=getPart(build.stack[i]);
+    if(isSideBoosterPart(p)) continue;
+    if(seen===visualIndex) return i;
+    seen++;
+  }
+  return -1;
+}
+
+function mainInsertIndexFromStageY(e){
+  const main=mainStackIds(build.stack);
+  if(!main.length) return build.stack.length;
+  const rocketEl=document.getElementById('rocket');
+  const rect=rocketEl.getBoundingClientRect();
+  const fromBottom=Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
+  const ratio=fromBottom/Math.max(1, rect.height);
+  const mainInsert=Math.max(0, Math.min(main.length, Math.round(ratio * main.length)));
+  if(mainInsert>=main.length) return build.stack.length;
+  return actualStackIndexForMainVisualIndex(mainInsert);
+}
+
+function setPartDragPayload(e, id){
+  e.dataTransfer.setData('text/plain', id);
+  e.dataTransfer.effectAllowed='copyMove';
+}
+
+function handleEditorDrop(e, fallbackIndex=build.stack.length){
+  e.preventDefault();
+  const from=e.dataTransfer.getData('text/build-stack-index');
+  const partId=e.dataTransfer.getData('text/plain');
+  const insertIndex = Number.isFinite(fallbackIndex) ? fallbackIndex : build.stack.length;
+  document.getElementById('stage')?.classList.remove('drag-over');
+  document.getElementById('dropzone')?.classList.remove('drag-over');
+  if(from!=='' && from!=null) reorderStack(Number(from), insertIndex);
+  else if(partId) insertPartAt(partId, insertIndex);
+}
+
+function installSegmentDragHandlers(el, stackIndex){
+  if(stackIndex<0) return;
+  el.classList.add('stack-draggable');
+  el.draggable=true;
+  el.dataset.stackIndex=stackIndex;
+  el.title='Drag this rocket part up or down to change the stage order.';
+  el.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('text/build-stack-index', stackIndex);
+    e.dataTransfer.effectAllowed='move';
+    el.style.opacity='.55';
+  });
+  el.addEventListener('dragend',()=>{
+    el.style.opacity='';
+    el.classList.remove('drag-over-top','drag-over-bottom');
+  });
+  el.addEventListener('dragover',e=>{
+    e.preventDefault();
+    const rect=el.getBoundingClientRect();
+    const dropAbove=e.clientY < rect.top + rect.height/2;
+    el.classList.toggle('drag-over-top', dropAbove);
+    el.classList.toggle('drag-over-bottom', !dropAbove);
+  });
+  el.addEventListener('dragleave',()=>el.classList.remove('drag-over-top','drag-over-bottom'));
+  el.addEventListener('drop',e=>{
+    e.preventDefault(); e.stopPropagation();
+    const rect=el.getBoundingClientRect();
+    const dropAbove=e.clientY < rect.top + rect.height/2;
+    // Build stack is bottom-to-top. Dropping in the top half inserts above this part.
+    const target=stackIndex + (dropAbove ? 1 : 0);
+    el.classList.remove('drag-over-top','drag-over-bottom');
+    handleEditorDrop(e,target);
+  });
+}
+
 function renderRocket(){
   const mount = document.getElementById('rocket');
   mount.innerHTML = '';
@@ -2245,11 +2349,12 @@ function renderRocket(){
 
   renderSideBoostersDOM(mount, layout, sideBoosterParts(build.stack));
 
-  layout.segments.forEach(({p, y, h, w, shroudedEngine}) => {
+  layout.segments.forEach(({p, vi, y, h, w, shroudedEngine}) => {
     const d = document.createElement('div');
     d.className = 'seg';
     d.style.cssText = `width:${w}px;height:${h}px;bottom:${y}px;left:50%;margin-left:${-w/2}px;`;
     d.innerHTML = shroudedEngine ? shroudedEngineSVG(p, w, h) : spriteImg(p, w, h);
+    if(p.pieceType !== 'NosePiece') installSegmentDragHandlers(d, actualStackIndexForMainVisualIndex(vi));
     mount.appendChild(d);
   });
 
@@ -2384,7 +2489,7 @@ function renderList(){
   build.fins.forEach((id,finIndex)=>rows.push({kind:'fin',slot:'FIN',id,index:finIndex,draggable:false}));
 
   if(!rows.length){
-    el.innerHTML='<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">No parts. Click parts to add.</p>';
+    el.innerHTML='<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">No parts yet. Drag parts here or click a part to add it.</p>';
     return;
   }
 
@@ -2393,9 +2498,10 @@ function renderList(){
     const dragAttrs=row.draggable ? ` draggable="true" data-stack-index="${row.stackIndex}"` : '';
     const cls='build-chip'+(row.draggable?' reorderable':'');
     const handle=row.draggable?'<span class="drag-handle">↕</span>':'';
+    const move=row.draggable?`<button class="move-mini" title="Move up" onclick="moveStackItem(${row.stackIndex},1,event)">▲</button><button class="move-mini" title="Move down" onclick="moveStackItem(${row.stackIndex},-1,event)">▼</button>`:'';
     return `<div class="${cls}" data-kind="${row.kind}" data-index="${row.index}"${dragAttrs}>
       <span>${handle}<b>${row.slot}</b> ${p?p.screenNameX:'?'}</span>
-      <button class="rm" onclick="removeBuildItem('${row.kind}',${row.index})">✕</button>
+      <span>${move}<button class="rm" onclick="removeBuildItem('${row.kind}',${row.index})">✕</button></span>
     </div>`;
   }).join('');
 
@@ -2438,6 +2544,18 @@ function renderList(){
     if(from!=='' && from!=null) reorderStack(Number(from),build.stack.length);
     else if(partId) insertPartAt(partId,build.stack.length);
   };
+}
+
+function moveStackItem(index,dir,event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  index=Number(index);dir=Number(dir);
+  if(!Number.isInteger(index)) return;
+  const target=index + (dir>0?1:-1);
+  if(target<0||target>=build.stack.length) return;
+  const tmp=build.stack[index];
+  build.stack[index]=build.stack[target];
+  build.stack[target]=tmp;
+  renderAll();
 }
 
 function removeBuildItem(kind,i){
@@ -2514,7 +2632,49 @@ const BANDS=[
   {name:'Deep Space',  min:10000000,  top:'#000004',bot:'#020816',stars:180,clouds:0},
   {name:'Moon Approach',min:PHYSICS.moonDistance*.82,top:'#000000',bot:'#010408',stars:220,clouds:0},
 ];
-function currentBand(){ let b=BANDS[0]; for(const x of BANDS){if((launchState?.altitude||0)>=x.min)b=x;} return b; }
+function hardCurrentBand(alt=(launchState?.altitude||0)){
+  let b=BANDS[0];
+  for(const x of BANDS){ if(alt>=x.min) b=x; }
+  return b;
+}
+function hexToRgb(hex){
+  const h=String(hex||'#000').replace('#','');
+  const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
+  return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+}
+function rgbToHex({r,g,b}){
+  const v=n=>Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,'0');
+  return `#${v(r)}${v(g)}${v(b)}`;
+}
+function mixColor(a,b,t){
+  const ca=hexToRgb(a), cb=hexToRgb(b);
+  return rgbToHex({r:ca.r+(cb.r-ca.r)*t,g:ca.g+(cb.g-ca.g)*t,b:ca.b+(cb.b-ca.b)*t});
+}
+function smoothStep(t){ t=Math.max(0,Math.min(1,t)); return t*t*(3-2*t); }
+function currentBand(){
+  const alt=launchState?.altitude||0;
+  const hard=hardCurrentBand(alt);
+  for(let i=1;i<BANDS.length;i++){
+    const next=BANDS[i], prev=BANDS[i-1];
+    const start=next.min*.72;
+    const end=next.min*1.24;
+    if(alt>=start && alt<=end){
+      const t=smoothStep((alt-start)/Math.max(1,end-start));
+      return {
+        name:hard.name,
+        min:hard.min,
+        top:mixColor(prev.top,next.top,t),
+        bot:mixColor(prev.bot,next.bot,t),
+        stars:Math.round((prev.stars||0)+((next.stars||0)-(prev.stars||0))*t),
+        clouds:Math.round((prev.clouds||0)+((next.clouds||0)-(prev.clouds||0))*t),
+        blend:t,
+        from:prev.name,
+        to:next.name
+      };
+    }
+  }
+  return {...hard, stars:Math.round(hard.stars||0), clouds:Math.round(hard.clouds||0), blend:1};
+}
 
 function formatDistance(m){
   if(!isFinite(m)||m<0) return '0 m';
@@ -3084,7 +3244,7 @@ function drawScene(rocketY,tilt,burning,finished=false){
   // Stars
   if(band.stars){
     ctx.fillStyle='rgba(255,255,255,.92)';
-    for(let i=0;i<band.stars;i++){
+    for(let i=0;i<Math.round(band.stars||0);i++){
       const sx=(i*97+41)%W;
       const sy=((i*61+scroll*.28)%H)-30;
       const sr=i%11===0?2:1;
@@ -3096,7 +3256,7 @@ function drawScene(rocketY,tilt,burning,finished=false){
   }
 
   // Clouds
-  for(let i=0;i<(band.clouds||0);i++){
+  for(let i=0;i<Math.round(band.clouds||0);i++){
     const layer=.4+(i%5)*.15;
     const cx=(i*163+(t*16*layer)%1200)-80;
     const cy=((i*79+scroll*layer)%520)-70;
