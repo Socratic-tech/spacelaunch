@@ -43,11 +43,11 @@ kbd{background:rgba(255,255,255,.13);border-radius:6px;padding:1px 6px}
 <div class="app">
   <aside class="card sidebar">
     <h1>Reentry Challenge</h1>
-    <div class="subtitle">The capsule enters at an angle, then gravity pulls the path more vertical as speed bleeds off. Keep the heat shield into the airflow and wait for chute ready.</div>
+    <div class="subtitle">The capsule enters at an angle, slows in thick air, uses a drogue chute, then deploys the main chute for landing.</div>
     <div id="missions"></div>
     <button class="btn" id="start">Start Reentry</button>
     <button class="btn secondary" id="reset">Reset</button>
-    <div class="help">Controls: <kbd>←</kbd>/<kbd>→</kbd> make small steering tilts, <kbd>C</kbd> centers the heat shield, <kbd>Space</kbd> deploys the chute when ready.</div>
+    <div class="help">Controls: <kbd>←</kbd>/<kbd>→</kbd> make small steering tilts, <kbd>C</kbd> centers the heat shield, and <kbd>Space</kbd> deploys the next safe chute.</div>
   </aside>
   <main class="card stage">
     <div class="topbar">
@@ -89,11 +89,13 @@ function fmtSpeed(s){return s>=1?`${s.toFixed(1)} km/s`:`${Math.round(s*1000)} m
 function ship(W,H){return{x:W*.52,y:H*.47}}
 function groundY(W,H){const s=ship(W,H);return lerp(H+150,s.y+82,clamp((12-state.alt)/12,0,1))}
 function totalAngle(){return state.flightOffset+state.tilt}
-function chuteReady(){return state.alt<18&&state.speed<1.25&&Math.abs(state.tilt)<32}
+function drogueReady(){return !state.drogue && state.alt<42 && state.speed<4.2 && Math.abs(state.tilt)<34}
+function mainChuteReady(){return state.drogue && !state.chute && state.alt<20 && state.speed<1.75 && Math.abs(state.tilt)<34}
+function chuteReady(){return mainChuteReady()}
 
 function init(){
   return{running:false,outcome:null,t:0,alt:selected.alt,speed:selected.speed,range:0,target:selected.target,
-    flightOffset:selected.offset,tilt:0,heat:2,maxHeat:0,skip:0,chute:false,chuteBad:false,maxMisalign:0,maxOffset:selected.offset};
+    flightOffset:selected.offset,tilt:0,heat:2,maxHeat:0,skip:0,drogue:false,chute:false,chuteBad:false,maxMisalign:0,maxOffset:selected.offset};
 }
 state=init();
 
@@ -117,7 +119,11 @@ $('chute').onclick=deployChute;
 
 function deployChute(){
   if(!state.running||state.outcome||state.chute)return;
-  if(!chuteReady()){noticeTimer=1.2;return;}
+  if(!state.drogue){
+    if(!drogueReady()){noticeTimer=1.2;return;}
+    state.drogue=true;burst(38,'drogue');noticeTimer=0;return;
+  }
+  if(!mainChuteReady()){noticeTimer=1.2;return;}
   state.chute=true;burst(44,'chute');
 }
 
@@ -147,7 +153,7 @@ function update(dt){
   state.alt=Math.max(0,state.alt-descent*dt*2.65);
 
   // Horizontal travel fades as the path becomes vertical, so landing becomes possible.
-  state.range+=state.speed*dt*(24+80*horizontal)+state.tilt*dt*1.25;
+  state.range+=state.speed*dt*(state.drogue?18:(24+80*horizontal))+state.tilt*dt*1.05;
 
   let drag=density*state.speed*state.speed*(.040+(1-mis)*.032+mis*.012+((state.chute && !state.chuteBad ? .85 : 0)));
   if(selected.help&&state.alt<60&&state.speed>1.8)drag*=1.18;
@@ -165,9 +171,9 @@ function update(dt){
 
   if(state.alt<=0){
     const miss=Math.abs(state.range-state.target);
-    if(state.chute&&!state.chuteBad&&state.speed<.42&&miss<240)end('Safe Landing',`You survived reentry and landed ${Math.round(miss)} km from recovery.`);
+    if(state.chute&&!state.chuteBad&&state.speed<.55&&miss<260)end('Safe Landing',`You survived reentry and landed ${Math.round(miss)} km from recovery.`);
     else if(state.chute&&!state.chuteBad)end('Hard Landing',`You survived the heat, but landing was rough or far from recovery. Miss: ${Math.round(miss)} km.`);
-    else end('Crash Landing','The capsule reached the ground without a safe parachute descent.');
+    else end('Crash Landing','The capsule reached the ground without completing the drogue and main chute landing sequence.');
   }
 
   if(state.heat>12&&state.speed>1.1&&Math.random()<.7)burst(1,'plasma');
@@ -179,7 +185,7 @@ function end(title,body){
   if(state.outcome)return;
   state.outcome=title;state.running=false;
   $('reportTitle').textContent=title;
-  $('reportBody').innerHTML=`${body}<br><br>Max heat: ${Math.round(state.maxHeat)}%<br>Worst shield tilt: ${Math.round(state.maxMisalign)}°<br>Final speed: ${fmtSpeed(state.speed)}<br>Final path angle: ${Math.round(state.flightOffset)}° from vertical<br>Range error: ${Math.round(Math.abs(state.range-state.target))} km`;
+  $('reportBody').innerHTML=`${body}<br><br>Max heat: ${Math.round(state.maxHeat)}%<br>Drogue: ${state.drogue ? 'deployed' : 'not deployed'}<br>Main chute: ${state.chute ? 'deployed' : 'not deployed'}<br>Worst shield tilt: ${Math.round(state.maxMisalign)}°<br>Final speed: ${fmtSpeed(state.speed)}<br>Final path angle: ${Math.round(state.flightOffset)}° from vertical<br>Range error: ${Math.round(Math.abs(state.range-state.target))} km`;
   $('report').classList.add('show');
 }
 function hideReport(){$('report').classList.remove('show')}
@@ -197,22 +203,26 @@ function burst(n,type){
 
 function phase(){
   if(!state.running)return'READY';
-  if(chuteReady()&&!state.chute)return'CHUTE READY';
+  if(drogueReady())return'DROGUE READY';
+  if(mainChuteReady())return'MAIN CHUTE READY';
   if(state.alt>94)return'ANGLED ENTRY';
   if(state.alt>70)return'ENTRY INTERFACE';
   if(state.heat>35&&state.speed>2)return'PLASMA AROUND HEAT SHIELD';
-  if(state.alt>18)return'GRAVITY TURNING PATH VERTICAL';
-  if(state.chute)return'PARACHUTE DESCENT';
+  if(state.drogue&&!state.chute)return'DROGUE BRAKING';
+  if(state.alt>18)return'THICK AIR BRAKING';
+  if(state.chute)return'MAIN CHUTE DESCENT';
   return'FINAL DESCENT';
 }
 function guide(){
   if(state.outcome)return'Review the flight report and try again.';
-  if(noticeTimer>0)return'Not yet — wait until the button says DEPLOY CHUTE.';
-  if(!state.running)return'Start reentry. The angled path will slowly become more vertical as the capsule slows.';
-  if(chuteReady()&&!state.chute)return'CHUTE READY: deploy now.';
+  if(noticeTimer>0)return'Not yet — wait until the button says DEPLOY DROGUE or DEPLOY MAIN CHUTE.';
+  if(!state.running)return'Start reentry. First survive plasma, then use drogue, then main chute.';
+  if(drogueReady())return'DROGUE READY: deploy the drogue to slow and stabilize the capsule.';
+  if(mainChuteReady())return'MAIN CHUTE READY: deploy now for landing.';
   if(Math.abs(state.tilt)>28&&state.heat>25)return'Shield exposed. Press CENTER SHIELD.';
   if(state.heat>78)return'Heating is high. Center the heat shield and avoid big tilts.';
-  if(state.alt<20&&!state.chute)return'Getting low. Keep steady until CHUTE READY appears.';
+  if(state.drogue&&!state.chute)return'Drogue is slowing you down. Wait for MAIN CHUTE READY.';
+  if(state.alt<24&&!state.chute)return'Getting low. Keep steady and wait for the chute sequence.';
   if(state.flightOffset>18)return'Entry path is still angled. Gravity will pull it more vertical as speed drops.';
   return'Good. Path is becoming vertical. Keep shield alignment stable.';
 }
@@ -304,8 +314,23 @@ function drawParticles(W,H){
 }
 
 function drawChute(W,H){
-  if(!state.chute||state.chuteBad)return;
-  const s=ship(W,H);ctx.save();ctx.translate(s.x,s.y-82);ctx.strokeStyle='white';ctx.lineWidth=1.6;for(let x=-48;x<=48;x+=16){ctx.beginPath();ctx.moveTo(0,62);ctx.lineTo(x,3);ctx.stroke()}ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();ctx.arc(0,0,64,Math.PI,0);ctx.lineTo(64,0);ctx.quadraticCurveTo(0,28,-64,0);ctx.fill();ctx.restore();
+  if(!state.drogue||state.chuteBad)return;
+  const s=ship(W,H);
+  ctx.save();
+  if(state.chute){
+    ctx.translate(s.x,s.y-82);
+    ctx.strokeStyle='white';ctx.lineWidth=1.6;
+    for(let x=-48;x<=48;x+=16){ctx.beginPath();ctx.moveTo(0,62);ctx.lineTo(x,3);ctx.stroke()}
+    ctx.fillStyle='rgba(255,255,255,.95)';
+    ctx.beginPath();ctx.arc(0,0,64,Math.PI,0);ctx.lineTo(64,0);ctx.quadraticCurveTo(0,28,-64,0);ctx.fill();
+  }else{
+    ctx.translate(s.x,s.y-58);
+    ctx.strokeStyle='rgba(255,255,255,.88)';ctx.lineWidth=1.4;
+    for(let x=-26;x<=26;x+=13){ctx.beginPath();ctx.moveTo(0,42);ctx.lineTo(x,2);ctx.stroke()}
+    ctx.fillStyle='rgba(255,220,120,.92)';
+    ctx.beginPath();ctx.arc(0,0,34,Math.PI,0);ctx.lineTo(34,0);ctx.quadraticCurveTo(0,15,-34,0);ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawNav(W,H){
@@ -320,7 +345,12 @@ function drawHUD(){
   setGauge('heat',state.heat,100,`${Math.round(state.heat)}%`,state.heat>82?'#ff4e62':state.heat>58?'#ff9e3d':'#4be187');
   setGauge('speed',state.speed,8.2,fmtSpeed(state.speed),'#66caff');setGauge('alt',state.alt,selected.alt,fmtAlt(state.alt),'#ffd13d');
   const mis=Math.abs(state.tilt),score=100-clamp(mis/36*100,0,100),label=mis<16?'GOOD':mis<28?'TILTED':'EXPOSED';$('shieldTxt').textContent=label;const f=$('shieldFill');f.style.width=`${score}%`;f.style.background=mis<16?'#4be187':mis<28?'#ff9e3d':'#ff4e62';
-  const c=$('chute');if(chuteReady()&&!state.chute){c.textContent='DEPLOY CHUTE';c.disabled=false}else if(state.chute){c.textContent='CHUTE OUT';c.disabled=true}else{c.textContent='CHUTE LOCKED';c.disabled=true}
+  const c=$('chute');
+  if(drogueReady()){c.textContent='DEPLOY DROGUE';c.disabled=false}
+  else if(mainChuteReady()){c.textContent='DEPLOY MAIN CHUTE';c.disabled=false}
+  else if(state.chute){c.textContent='MAIN CHUTE OUT';c.disabled=true}
+  else if(state.drogue){c.textContent='WAIT FOR MAIN';c.disabled=true}
+  else{c.textContent='CHUTE LOCKED';c.disabled=true}
 }
 function setGauge(name,val,max,txt,color){$(`${name}Txt`).textContent=txt;const f=$(`${name}Fill`);f.style.width=`${clamp(val/max*100,0,100)}%`;f.style.background=color}
 
