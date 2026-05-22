@@ -96,6 +96,72 @@ header{
 .mode-easy .parts-scroll.school-guided{max-height:240px}
 .mode-easy .mode-panel + .rocket-school-panel + .panel .panel-header span:first-child::after{content:' · OPTIONAL';color:var(--muted);font-size:10px;letter-spacing:.08em}
 
+
+/* ─── CLEAN ROCKET SCHOOL INTERFACE ───
+   Easy Mode is now a student-first lesson flow. Advanced simulator controls
+   stay available, but they do not crowd the 1st–4th grade default screen. */
+.mode-easy header{padding:12px 18px}
+.mode-easy .logo h1{font-size:17px;letter-spacing:.08em}
+.mode-easy .logo .sub{font-size:10px}
+.mode-easy header .best-badge,.mode-easy header #launchBtn{display:none}
+.mode-easy .app{grid-template-columns:minmax(300px,390px) minmax(430px,1fr);gap:16px;max-width:1180px;align-items:stretch}
+.mode-easy .right-col{display:none}
+.mode-easy .mode-panel{display:none}
+.mode-easy.school-teacher-open .mode-panel{display:block}
+.mode-easy #partLibraryPanel{display:none}
+.mode-easy.school-builder-open #partLibraryPanel{display:block}
+.mode-easy #saveBtn,.mode-easy #loadBtn,.mode-easy #clearBtn,.mode-easy #launchBtn2{display:none}
+.mode-easy .stage-toolbar{justify-content:center;padding:12px;background:rgba(255,255,255,.025)}
+.mode-easy #sampleBtn{font-size:13px;padding:13px 20px;border-color:rgba(245,196,0,.38);background:rgba(245,196,0,.12);color:var(--accent)}
+.mode-easy .stage-panel{min-height:650px}
+.mode-easy .stage{min-height:560px;border-radius:0 0 10px 10px}
+.mode-easy .dropzone{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.018)}
+.mode-easy .hint-tag{font-size:13px;padding:8px 14px;background:rgba(5,17,31,.78)}
+.mode-easy .rocket-school-panel{border-color:rgba(0,232,122,.35);box-shadow:0 8px 30px rgba(0,0,0,.28),0 0 24px rgba(0,232,122,.07)}
+.mode-easy .rocket-school-panel .panel-header{font-size:12px;padding:12px 14px;background:rgba(0,232,122,.06)}
+.mode-easy .school-card{padding:16px;gap:13px;border-radius:14px;background:linear-gradient(180deg,rgba(22,42,58,.98),rgba(9,18,31,.98));border-color:rgba(0,232,122,.2)}
+.mode-easy .school-title{font-size:28px;line-height:1}
+.mode-easy .school-goal{font-size:13px;color:#b7d6e8;line-height:1.45}
+.mode-easy .school-instruction{font-size:18px;line-height:1.35;padding:13px;border-radius:12px;background:rgba(0,232,122,.1)}
+.school-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.school-flow-step{min-height:54px;border-radius:11px;border:1px solid rgba(245,196,0,.22);background:rgba(245,196,0,.07);padding:8px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.school-flow-step b{font-family:var(--font-hud);font-size:11px;letter-spacing:.08em;color:var(--accent)}
+.school-flow-step span{font-family:var(--font-ui);font-size:14px;font-weight:700;color:#e7f6ff;line-height:1.05}
+.school-actions.primary-path{grid-template-columns:1fr;gap:9px}
+.school-big-btn.primary-launch{font-size:16px;padding:16px 12px;background:linear-gradient(135deg,#ffcf2e,#ff7a00);border-color:rgba(255,255,255,.18)}
+.school-support-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.school-mini-btn{font-family:var(--font-hud);font-size:10px;letter-spacing:.06em;padding:10px 8px;border-radius:9px;border:1px solid var(--border2);background:rgba(255,255,255,.045);color:var(--text);cursor:pointer}
+.school-mini-btn.active{border-color:var(--green);color:var(--green);background:rgba(0,232,122,.08)}
+.school-mini-btn:hover{border-color:rgba(245,196,0,.35)}
+.mode-easy .school-lesson-list{display:none}
+.mode-easy.school-builder-open .school-lesson-list{display:grid}
+.mode-easy .school-words{display:block;font-size:12px;line-height:1.4;border-radius:10px;padding:9px 10px}
+.mode-easy .school-note{font-size:11px;color:#89acc4}
+.big-text .school-title{font-size:34px}
+.big-text .school-goal{font-size:16px}
+.big-text .school-instruction{font-size:22px}
+.big-text .school-flow-step span{font-size:17px}
+.big-text .school-big-btn{font-size:16px}
+.big-text .hint-tag{font-size:16px}
+
+.mode-easy .launch-modal{width:min(820px,97vw)}
+.mode-easy .launch-controls{grid-template-columns:1fr auto auto;gap:9px}
+.mode-easy .launch-controls .mix-zone,.mode-easy #speedBtn{display:none}
+.mode-easy .hud-strip{grid-template-columns:1fr 1fr}
+.mode-easy .hud-cell{display:none;text-align:center;border-right:1px solid var(--border)}
+.mode-easy .hud-cell:nth-child(2),.mode-easy .hud-cell:nth-child(4){display:block}
+.mode-easy .hud-key{font-size:11px}
+.mode-easy .hud-val{font-size:18px;color:#fff}
+.mode-easy .result-bar{font-size:15px;min-height:72px}
+.mode-easy .result-bar .big{font-size:24px}
+.mode-easy .result-bar .note{font-size:13px;line-height:1.45}
+@media(max-width:900px){
+  .mode-easy .app{grid-template-columns:1fr;max-width:720px}
+  .mode-easy .stage-panel{min-height:520px}
+  .mode-easy .stage{min-height:440px}
+  .school-flow{grid-template-columns:1fr 1fr}
+}
+
 /* ─── LAYOUT ─── */
 .app{display:grid;grid-template-columns:280px 1fr 300px;gap:12px;padding:12px;max-width:1460px;margin:auto;min-height:calc(100vh - 60px)}
 .col{display:flex;flex-direction:column;gap:12px}
@@ -471,8 +537,8 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
 </header>
 
 <div class="app">
-  <!-- LEFT: Part Library -->
-  <div class="col">
+  <!-- LEFT: Rocket School + optional tools -->
+  <div class="col left-col">
     <div class="panel mode-panel">
       <div class="panel-header">GAME MODE</div>
       <div class="panel-body">
@@ -491,9 +557,9 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
       </div>
       <div class="panel-body" id="rocketSchoolBody"></div>
     </div>
-    <div class="panel" style="flex:1">
+    <div class="panel" id="partLibraryPanel" style="flex:1">
       <div class="panel-header">
-        <span>PART LIBRARY</span>
+        <span>BUILDER PARTS</span>
         <span id="unlockedCount" style="color:var(--muted);font-size:10px"></span>
       </div>
       <div class="panel-body" style="padding-bottom:6px">
@@ -504,7 +570,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
   </div>
 
   <!-- CENTER: Builder -->
-  <div class="col">
+  <div class="col center-col">
     <div class="panel builder-wrap stage-panel">
       <div class="panel-header">
         <span>ROCKET ASSEMBLY</span>
@@ -527,7 +593,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
   </div>
 
   <!-- RIGHT: Stats -->
-  <div class="col">
+  <div class="col right-col">
     <div class="panel">
       <div class="panel-header">PERFORMANCE</div>
       <div class="panel-body" id="stats"></div>
@@ -1092,6 +1158,9 @@ const ROCKET_SCHOOL_LESSONS = [
 ];
 let easySchoolLevel=Math.max(0,Math.min(ROCKET_SCHOOL_LESSONS.length-1,Number(localStorage.getItem(ROCKET_SCHOOL_LEVEL_KEY)||0)));
 let activeSchoolLesson=Math.max(0,Math.min(easySchoolLevel,Number(localStorage.getItem(ROCKET_SCHOOL_SELECTED_KEY)||easySchoolLevel)));
+let schoolBuilderOpen=localStorage.getItem('slSchoolBuilderOpen')==='1';
+let schoolTeacherOpen=false;
+let bigTextMode=localStorage.getItem('slBigTextMode')==='1';
 const MODES = {
   easy:{
     key:'easy', label:'EASY MODE', bestLabel:'EASY BEST',
@@ -1171,6 +1240,46 @@ function sanitizeBuildForMode(){
   build.fins=(build.fins||[]).filter(ok).slice(0,4);
   if(build.nose && !ok(build.nose)) build.nose=null;
 }
+function updateSchoolUiClasses(){
+  document.body.classList.toggle('school-builder-open', gameMode==='easy' && schoolBuilderOpen);
+  document.body.classList.toggle('school-teacher-open', gameMode==='easy' && schoolTeacherOpen);
+  document.body.classList.toggle('big-text', bigTextMode);
+}
+function toggleSchoolBuilderTools(){
+  schoolBuilderOpen=!schoolBuilderOpen;
+  localStorage.setItem('slSchoolBuilderOpen',schoolBuilderOpen?'1':'0');
+  updateSchoolUiClasses();
+  renderRocketSchool();
+}
+function toggleSchoolTeacherTools(){
+  schoolTeacherOpen=!schoolTeacherOpen;
+  updateSchoolUiClasses();
+  renderRocketSchool();
+}
+function toggleBigText(){
+  bigTextMode=!bigTextMode;
+  localStorage.setItem('slBigTextMode',bigTextMode?'1':'0');
+  updateSchoolUiClasses();
+  renderRocketSchool();
+}
+function plainTextFromHtml(html){
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html||'';
+  return tmp.textContent||tmp.innerText||'';
+}
+function readSchoolDirections(){
+  const l=currentSchoolLesson();
+  const text=`${l.title}. ${plainTextFromHtml(l.goal)} ${plainTextFromHtml(l.instruction)} Flow: Load rocket. Launch. Notice what happened.`;
+  if('speechSynthesis' in window){
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(text);
+    utterance.rate=.88;
+    window.speechSynthesis.speak(utterance);
+  }else{
+    alert(text);
+  }
+}
+
 function updateModeAssistVisuals(){
   const cfg=modeConfig();
   const sweet=document.querySelector('.sweet-zone');
@@ -1181,6 +1290,7 @@ function updateModeAssistVisuals(){
   document.body.classList.toggle('mode-easy',gameMode==='easy');
   document.body.classList.toggle('mode-career',gameMode==='career');
   document.body.classList.toggle('mode-sandbox',gameMode==='sandbox');
+  updateSchoolUiClasses();
 }
 function updateModeUI(){
   document.querySelectorAll('.mode-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===gameMode));
@@ -1263,24 +1373,39 @@ function renderRocketSchool(){
       <span class="school-lesson-status">${status}</span>
     </button>`;
   }).join('');
+  const flow=[
+    ['1','Pick','Choose lesson'],
+    ['2','Load','Ready rocket'],
+    ['3','Launch','Watch flight'],
+    ['4','Notice','What changed?']
+  ].map(item=>`<div class="school-flow-step"><b>${item[0]} · ${item[1]}</b><span>${item[2]}</span></div>`).join('');
+  const builderLabel=schoolBuilderOpen?'HIDE BUILDER PARTS':'SHOW BUILDER PARTS';
+  const teacherLabel=schoolTeacherOpen?'HIDE TEACHER MODES':'TEACHER MODES';
   body.innerHTML=`<div class="school-card">
     <div class="school-top">
       <div>
-        <div class="school-level">${l.level}</div>
+        <div class="school-level">ROCKET SCHOOL · ${l.level}</div>
         <div class="school-title">${l.title}</div>
       </div>
       <div class="school-level">${activeSchoolLesson+1}/${ROCKET_SCHOOL_LESSONS.length}</div>
     </div>
+    <div class="school-flow">${flow}</div>
     <div class="school-goal">${l.goal}</div>
     <div class="school-instruction">${l.instruction}</div>
-    <div class="school-actions">
+    <div class="school-actions primary-path">
       <button class="school-big-btn" onclick="loadSchoolLesson(${activeSchoolLesson})">${l.primary}</button>
-      <button class="school-big-btn secondary" onclick="openLaunch()">▶ LAUNCH LESSON</button>
+      <button class="school-big-btn primary-launch" onclick="openLaunch()">▶ LAUNCH LESSON</button>
+    </div>
+    <div class="school-support-actions">
+      <button class="school-mini-btn" onclick="readSchoolDirections()">🔊 READ DIRECTIONS</button>
+      <button class="school-mini-btn ${bigTextMode?'active':''}" onclick="toggleBigText()">Aa BIG TEXT</button>
+      <button class="school-mini-btn ${schoolBuilderOpen?'active':''}" onclick="toggleSchoolBuilderTools()">${builderLabel}</button>
+      <button class="school-mini-btn ${schoolTeacherOpen?'active':''}" onclick="toggleSchoolTeacherTools()">${teacherLabel}</button>
     </div>
     <div class="school-steps">${steps}</div>
     <div class="school-lesson-list">${lessonList}</div>
-    <div class="school-words ${schoolWordsVisible()?'show':''}">${l.words}</div>
-    <div class="school-note">Flow: Load → Launch → Notice → Change one thing. Younger students can use the loaded rockets as-is; older students can test one part change after each launch.</div>
+    <div class="school-words show">${l.words}</div>
+    <div class="school-note">Student flow: load the lesson rocket, launch once, notice what happened, then change only one thing. Builder parts and teacher modes are optional tools.</div>
   </div>`;
 }
 function completeSchoolLessonIfReady(altitude){
@@ -2929,7 +3054,7 @@ function updateHUD(){
   document.getElementById('coastBtn').disabled=!canCoast||!!launchState.apogeeAssist;
   document.getElementById('speedBtn').disabled=!canCoast&&!launchState.apogeeAssist;
   if(launchState.apogeeAssist) document.getElementById('coastBtn').textContent='Coasting…';
-  else document.getElementById('coastBtn').textContent='COAST TO APOGEE';
+  else document.getElementById('coastBtn').textContent=gameMode==='easy'?'FINISH FLIGHT FAST':'COAST TO APOGEE';
   refreshStageButton();
 }
 
@@ -3069,7 +3194,8 @@ function flightStep(now){
         refreshStageButton();
         setResult(`<div class="result-icon">⚡</div><div><div class="result-cue stage-cue">Stage ${launchState.current+1} burned out — separate and ignite Stage ${launchState.current+2} now!</div></div>`);
       } else {
-        setResult('<div class="result-icon">🌠</div><div><div class="result-cue stage-cue">Final burnout. Use COAST TO APOGEE to skip the wait.</div></div>');
+        const doneMsg=gameMode==='easy'?'The engine is done. Press FINISH FLIGHT FAST to see the final altitude.':'Final burnout. Use COAST TO APOGEE to skip the wait.';
+        setResult(`<div class="result-icon">🌠</div><div><div class="result-cue stage-cue">${doneMsg}</div></div>`);
       }
     }
   }
@@ -3162,17 +3288,21 @@ function openLaunch(){
   launchState.initialFuel=stackFuelForFlight().total;
   coastIdx=0;
   document.getElementById('commitBtn').disabled=false;
-  document.getElementById('commitBtn').textContent=(gameMode==='easy' && activeSchoolLesson<4)?'LAUNCH ROCKET':'IGNITE STAGE 1';
+  document.getElementById('commitBtn').textContent=gameMode==='easy'?'START FLIGHT':'IGNITE STAGE 1';
   document.getElementById('nextBtn').disabled=true;
-  document.getElementById('nextBtn').textContent=gameMode==='easy' ? (stages.length>1?'STAGE 2 WAITING':'FINAL STAGE') : (stages.length>1?'STAGE 2 ARMED':'FINAL STAGE');
+  document.getElementById('nextBtn').textContent=gameMode==='easy' ? (stages.length>1?'NEXT STAGE':'FINAL STAGE') : (stages.length>1?'STAGE 2 ARMED':'FINAL STAGE');
   document.getElementById('speedBtn').textContent='COAST 1×';
+  document.getElementById('coastBtn').textContent=gameMode==='easy'?'FINISH FLIGHT FAST':'COAST TO APOGEE';
   const modeNote = gameMode==='easy'
     ? schoolLaunchInstruction()
     : gameMode==='sandbox'
     ? 'Fully Unlocked mode will not change Career unlock progress.'
     : 'Career Mode altitude records unlock new parts.';
-  const launchVerb=(gameMode==='easy' && activeSchoolLesson<4)?'LAUNCH ROCKET':'IGNITE STAGE 1';
-  setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>${modeConfig().label}</b>: Hit <b>${launchVerb}</b> in the <b style="color:var(--green)">green zone</b>. ${modeNote}</div></div>`);
+  if(gameMode==='easy'){
+    setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>Rocket School</b>: Press <b>START FLIGHT</b>. Then watch the rocket and notice the final altitude. ${modeNote}</div></div>`);
+  }else{
+    setResult(`<div class="result-icon">🚀</div><div><div class="result-cue"><b>${modeConfig().label}</b>: Hit <b>IGNITE STAGE 1</b> in the <b style="color:var(--green)">green zone</b>. ${modeNote}</div></div>`);
+  }
   updateModeAssistVisuals();
   updateHUD();
   drawScene(400,0,false);
@@ -3182,15 +3312,15 @@ function openLaunch(){
 function igniteFirst(){
   if(!launchState)return;
   cancelAnimationFrame(mixAnim);
-  const q=ignitionQuality();
+  const q=gameMode==='easy' ? 1 : ignitionQuality();
   launchState.totalQuality+=q;
   document.getElementById('commitBtn').disabled=true;
-  const qMsg=q>.82?'Perfect mixture! 🎯':'Mixture off — but it will fly.';
+  const qMsg=gameMode==='easy'?'Liftoff! Watch what changes.':(q>.82?'Perfect mixture! 🎯':'Mixture off — but it will fly.');
   addEvent(qMsg,q>.82?'good':'cue');
   const nextTip = gameMode==='easy'
-    ? (activeSchoolLesson<4 ? 'Watch what changes.' : 'Watch for burnout, then use the next big button.')
+    ? (activeSchoolLesson<4 ? 'Look for the final altitude.' : 'If NEXT STAGE lights up, older students can press it. Otherwise wait for the final altitude.')
     : 'Watch altitude and time the next stage.';
-  setResult(`<div class="result-icon">${q>.82?'🎯':'🔥'}</div><div><div class="result-cue stage-cue">${qMsg} ${nextTip}</div></div>`);
+  setResult(`<div class="result-icon">${gameMode==='easy'?'🚀':(q>.82?'🎯':'🔥')}</div><div><div class="result-cue stage-cue">${qMsg} ${nextTip}</div></div>`);
   launchState.shake=22;
   igniteStage(0,q);
   launchState.startTime=performance.now();
@@ -3294,7 +3424,11 @@ function finishFlight(){
   const schoolNote = completeSchoolLessonIfReady(altitude);
 
   drawScene(250,0,false,true);
-  setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}${stagingNote}${schoolNote}</div></div>`);
+  if(gameMode==='easy'){
+    setResult(`<div class="result-icon">${icon}</div><div><div class="big">Final Altitude: ${formatDistance(altitude)}${newBestTag}</div><div class="note">${msg}${schoolNote}</div></div>`);
+  }else{
+    setResult(`<div class="result-icon">${icon}</div><div><div class="big">${title}: ${formatDistance(altitude)}${newBestTag}</div><div class="note">Zone: ${reached}. Score: ${launchState.score}. ${msg}${stagingNote}${schoolNote}</div></div>`);
+  }
   updateHUD();
   renderStats();
 }
