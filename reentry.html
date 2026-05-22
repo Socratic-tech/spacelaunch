@@ -46,7 +46,7 @@ kbd{background:rgba(255,255,255,.13);border-radius:6px;padding:1px 6px}
 <div class="app">
   <aside class="card sidebar">
     <h1>Reentry Challenge</h1>
-    <div class="subtitle">Survive the side-profile reentry first. After the main chute opens, switch to overhead recovery view and steer toward the target.</div>
+    <div class="subtitle">Survive the side-profile reentry first. The landing computer handles chute timing if you wait too long, then you steer overhead toward the target.</div>
     <div id="missions"></div>
     <button class="btn" id="start">Start Reentry</button>
     <button class="btn secondary" id="reset">Reset</button>
@@ -93,13 +93,13 @@ function ship(W,H){return{x:W*.52,y:H*.47}}
 function groundY(W,H){const s=ship(W,H);return lerp(H+150,s.y+82,clamp((12-state.alt)/12,0,1))}
 function totalAngle(){return state.flightOffset+state.tilt}
 function drogueReady(){return !state.drogue && state.view==='reentry' && state.alt<42 && state.speed<4.2 && Math.abs(state.tilt)<34}
-function mainChuteReady(){return state.drogue && !state.chute && state.view==='reentry' && state.alt<24 && state.speed<2.05 && Math.abs(state.tilt)<36}
+function mainChuteReady(){return state.drogue && !state.chute && state.view==='reentry' && state.alt<32 && state.speed<2.35 && Math.abs(state.tilt)<42}
 
 function init(){
   return{
     view:'reentry',running:false,outcome:null,t:0,alt:selected.alt,speed:selected.speed,range:-360,target:selected.target,
     flightOffset:selected.offset,tilt:0,heat:2,maxHeat:0,skip:0,drogue:false,chute:false,chuteBad:false,maxMisalign:0,
-    recX:-120,recY:-520,recVy:44,recVx:0,flare:0,wind:selected.wind,landingSpeed:0,landingMiss:0,mainReadyTime:0
+    recX:-120,recY:-520,recVy:44,recVx:0,flare:0,wind:selected.wind,landingSpeed:0,landingMiss:0,mainReadyTime:0,drogueReadyTime:0,drogueTime:0
   };
 }
 state=init();
@@ -147,10 +147,14 @@ function setRecoveryLabels(isRecovery){
 function deployChute(){
   if(!state.running||state.outcome||state.view!=='reentry')return;
   if(!state.drogue){
-    if(!drogueReady()){noticeTimer=1.2;return}
-    state.drogue=true;burst(38,'drogue');noticeTimer=0;return;
+    if(!drogueReady()){noticeTimer=1.0;return}
+    state.drogue=true;state.drogueTime=0;burst(38,'drogue');noticeTimer=0;return;
   }
-  if(!mainChuteReady()){noticeTimer=1.2;return}
+  if(!mainChuteReady()){noticeTimer=1.0;return}
+  deployMainChute();
+}
+function deployMainChute(){
+  if(state.chute||state.view!=='reentry')return;
   state.chute=true;burst(44,'chute');beginRecovery();
 }
 
@@ -158,9 +162,9 @@ function beginRecovery(){
   state.view='recovery';
   transitionTimer=1.2;
   // Convert the side-profile range error into a starting overhead drift.
-  state.recX=clamp((state.range-state.target)*.22,-230,230);
+  state.recX=clamp((state.range-state.target)*.12,-170,170);
   state.recY=-520;
-  state.recVy=selected.help?36:42;
+  state.recVy=selected.help?42:48;
   state.recVx=state.wind*60;
   state.alt=2.5; // km equivalent for the HUD during recovery.
   state.speed=.18;
@@ -195,23 +199,43 @@ function updateReentry(dt){
 
   let descent=state.speed*(.18+.56*vertical+.10*mis);
   if(state.alt<42&&!state.chute)descent*=.68;
-  if(state.drogue&&!state.chute)descent*=.34;
+  if(state.drogue&&!state.chute)descent*=.30;
   state.alt=Math.max(0,state.alt-descent*dt*2.65);
 
   state.range+=state.speed*dt*(state.drogue?18:(24+80*horizontal))+state.tilt*dt*1.05;
 
   const lowAir=clamp((45-state.alt)/45,0,1);
-  let drag=density*state.speed*state.speed*(.055+(1-mis)*.045+mis*.012+lowAir*.060+((state.drogue && !state.chute ? .58 : 0)));
+  let drag=density*state.speed*state.speed*(.055+(1-mis)*.045+mis*.012+lowAir*.060+((state.drogue && !state.chute ? .72 : 0)));
   if(selected.help&&state.alt<60&&state.speed>1.8)drag*=1.18;
-  state.speed=Math.max((state.drogue ? .085 : .13),state.speed-drag*dt);
+  state.speed=Math.max((state.drogue ? .020 : .13),state.speed-drag*dt);
+
+  // Autopilot safety prevents the game from stalling at a speed floor.
+  // The user can click the button earlier, but the landing computer will not let them wait forever.
+  if(drogueReady()){
+    state.drogueReadyTime += dt;
+    if(state.drogueReadyTime > (selected.help ? 1.6 : 3.2)){
+      state.drogue=true;state.drogueTime=0;burst(38,'drogue');noticeTimer=0;
+    }
+  }else{
+    state.drogueReadyTime = 0;
+  }
+
+  if(state.drogue && !state.chute){
+    state.drogueTime += dt;
+  }
 
   if(mainChuteReady()){
     state.mainReadyTime += dt;
-    if(selected.help && state.mainReadyTime > 2.2){
-      state.chute=true;burst(44,'chute');beginRecovery();return;
+    if(state.mainReadyTime > (selected.help ? 1.2 : 2.6)){
+      deployMainChute();return;
     }
   }else{
     state.mainReadyTime = 0;
+  }
+
+  // Hard failsafe: after drogue braking, switch to main chute instead of sitting at a low speed.
+  if(state.drogue && !state.chute && (state.drogueTime > 8.5 || state.speed < .11 || state.alt < 9)){
+    deployMainChute();return;
   }
 
   const heatBuild=density*Math.pow(state.speed,2.28)*(.33+mis*.92+vertical*.10);
@@ -244,7 +268,7 @@ function updateRecovery(dt){
   state.recVx=clamp(state.recVx,-72,72);
 
   // descent accelerates slowly but can be managed with flare
-  const targetVy=state.flare>.25?24:42;
+  const targetVy=state.flare>.25?26:50;
   state.recVy=lerp(state.recVy,targetVy,.025);
   state.recX+=state.recVx*dt;
   state.recY+=state.recVy*dt;
@@ -295,7 +319,7 @@ function phase(){
 }
 function guide(){
   if(state.outcome)return'Review the flight report and try again.';
-  if(noticeTimer>0)return'Not yet — wait until the button says DEPLOY DROGUE or DEPLOY MAIN CHUTE.';
+  if(noticeTimer>0)return'Not yet — wait for DEPLOY DROGUE or DEPLOY MAIN CHUTE. The landing computer will help if you wait too long.';
   if(!state.running)return'Start reentry. Survive the side profile, then steer in overhead recovery.';
   if(state.view==='recovery')return'Overhead view: steer under the parachute toward the recovery zone. Use FLARE near landing.';
   if(drogueReady())return'DROGUE READY: deploy the drogue to slow and stabilize.';
