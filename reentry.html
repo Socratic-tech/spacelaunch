@@ -55,7 +55,7 @@ kbd{background:rgba(255,255,255,.13);border-radius:6px;padding:1px 6px}
   <main class="card stage">
     <div class="topbar">
       <div class="gauge"><label>HEAT <span id="heatTxt">0%</span></label><div class="bar"><div class="fill" id="heatFill"></div></div></div>
-      <div class="gauge"><label>SPEED <span id="speedTxt">0 km/s</span></label><div class="bar"><div class="fill" id="speedFill"></div></div></div>
+      <div class="gauge"><label id="speedLabel">SPEED <span id="speedTxt">0 km/s</span></label><div class="bar"><div class="fill" id="speedFill"></div></div></div>
       <div class="gauge"><label>ALTITUDE <span id="altTxt">0 km</span></label><div class="bar"><div class="fill" id="altFill"></div></div></div>
       <div class="gauge"><label>STATUS <span id="statusTxt">READY</span></label><div class="bar"><div class="fill" id="statusFill"></div></div></div>
     </div>
@@ -93,13 +93,13 @@ function ship(W,H){return{x:W*.52,y:H*.47}}
 function groundY(W,H){const s=ship(W,H);return lerp(H+150,s.y+82,clamp((12-state.alt)/12,0,1))}
 function totalAngle(){return state.flightOffset+state.tilt}
 function drogueReady(){return !state.drogue && state.view==='reentry' && state.alt<42 && state.speed<4.2 && Math.abs(state.tilt)<34}
-function mainChuteReady(){return state.drogue && !state.chute && state.view==='reentry' && state.alt<20 && state.speed<1.75 && Math.abs(state.tilt)<34}
+function mainChuteReady(){return state.drogue && !state.chute && state.view==='reentry' && state.alt<24 && state.speed<2.05 && Math.abs(state.tilt)<36}
 
 function init(){
   return{
     view:'reentry',running:false,outcome:null,t:0,alt:selected.alt,speed:selected.speed,range:-360,target:selected.target,
     flightOffset:selected.offset,tilt:0,heat:2,maxHeat:0,skip:0,drogue:false,chute:false,chuteBad:false,maxMisalign:0,
-    recX:-120,recY:-520,recVy:44,recVx:0,flare:0,wind:selected.wind,landingSpeed:0,landingMiss:0
+    recX:-120,recY:-520,recVy:44,recVx:0,flare:0,wind:selected.wind,landingSpeed:0,landingMiss:0,mainReadyTime:0
   };
 }
 state=init();
@@ -195,15 +195,24 @@ function updateReentry(dt){
 
   let descent=state.speed*(.18+.56*vertical+.10*mis);
   if(state.alt<42&&!state.chute)descent*=.68;
-  if(state.drogue&&!state.chute)descent*=.40;
+  if(state.drogue&&!state.chute)descent*=.34;
   state.alt=Math.max(0,state.alt-descent*dt*2.65);
 
   state.range+=state.speed*dt*(state.drogue?18:(24+80*horizontal))+state.tilt*dt*1.05;
 
   const lowAir=clamp((45-state.alt)/45,0,1);
-  let drag=density*state.speed*state.speed*(.055+(1-mis)*.045+mis*.012+lowAir*.060+((state.drogue && !state.chute ? .42 : 0)));
+  let drag=density*state.speed*state.speed*(.055+(1-mis)*.045+mis*.012+lowAir*.060+((state.drogue && !state.chute ? .58 : 0)));
   if(selected.help&&state.alt<60&&state.speed>1.8)drag*=1.18;
-  state.speed=Math.max((state.drogue ? .22 : .13),state.speed-drag*dt);
+  state.speed=Math.max((state.drogue ? .085 : .13),state.speed-drag*dt);
+
+  if(mainChuteReady()){
+    state.mainReadyTime += dt;
+    if(selected.help && state.mainReadyTime > 2.2){
+      state.chute=true;burst(44,'chute');beginRecovery();return;
+    }
+  }else{
+    state.mainReadyTime = 0;
+  }
 
   const heatBuild=density*Math.pow(state.speed,2.28)*(.33+mis*.92+vertical*.10);
   const cooling=(.14+((state.speed<2.3 ? .34 : 0))+((state.drogue ? .12 : 0)))*dt*18;
@@ -363,9 +372,15 @@ function drawTransition(W,H){ctx.save();ctx.globalAlpha=clamp(transitionTimer/1.
 
 function drawHUD(){
   $('phase').textContent=phase();$('guide').textContent=guide();
+  $('speedLabel').firstChild.textContent = state.view==='recovery' ? 'DESCENT / DRIFT ' : 'SPEED ';
   setGauge('heat',state.heat,100,`${Math.round(state.heat)}%`,state.heat>82?'#ff4e62':state.heat>58?'#ff9e3d':'#4be187');
-  setGauge('speed',state.speed,8.2,fmtSpeed(state.speed),'#66caff');
-  setGauge('alt',state.view==='recovery'?state.alt:selected.alt?state.alt:0,selected.alt,fmtAlt(state.alt),'#ffd13d');
+  if(state.view==='recovery'){
+    setGauge('speed',Math.min(1,Math.hypot(state.recVx,state.recVy)/80),1,`${Math.round(state.recVy)} m/s down · ${Math.round(Math.abs(state.recVx))} m/s drift`,'#66caff');
+    setGauge('alt',state.alt,2.5,`${Math.max(0,Math.round(state.alt*1000))} m`,'#ffd13d');
+  }else{
+    setGauge('speed',state.speed,8.2,fmtSpeed(state.speed),'#66caff');
+    setGauge('alt',state.alt,selected.alt,fmtAlt(state.alt),'#ffd13d');
+  }
   if(state.view==='recovery'){
     const miss=Math.hypot(state.recX,state.target);
     const score=100-clamp(miss/(selected.targetR*2)*100,0,100);
@@ -379,7 +394,7 @@ function drawHUD(){
   if(state.view==='recovery'){c.textContent='UNDER CHUTE';c.disabled=true}
   else if(drogueReady()){c.textContent='DEPLOY DROGUE';c.disabled=false}
   else if(mainChuteReady()){c.textContent='DEPLOY MAIN CHUTE';c.disabled=false}
-  else if(state.chute){c.textContent='MAIN CHUTE OUT';c.disabled=true}
+  else if(state.chute){c.textContent=state.view==='recovery'?'UNDER CHUTE':'MAIN CHUTE OUT';c.disabled=true}
   else if(state.drogue){c.textContent='WAIT FOR MAIN';c.disabled=true}
   else{c.textContent='CHUTE LOCKED';c.disabled=true}
 }
