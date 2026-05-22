@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Reentry Challenge v7</title>
+<title>Reentry Challenge v9</title>
 <style>
 :root{
   --text:#eef7ff;--muted:#b8cada;--accent:#ffd13d;--good:#45e184;--warn:#ff9e3d;--bad:#ff4e62;--blue:#65caff;
@@ -19,16 +19,19 @@ h1{font-size:28px;line-height:1;margin:0}.subtitle,.help{font-size:14px;line-hei
 .mission:hover{background:rgba(255,255,255,.085)}.mission.active{outline:3px solid rgba(255,209,61,.55);background:rgba(255,209,61,.13)}
 .mission b{display:block}.mission span{display:block;color:var(--muted);font-size:13px;line-height:1.25}
 .btn{border:0;border-radius:14px;padding:12px 13px;font-weight:1000;font-size:15px;color:#06111d;background:linear-gradient(180deg,#ffe275,#f5b71f);box-shadow:0 4px 0 rgba(105,76,0,.85);cursor:pointer}
-.btn.secondary{background:linear-gradient(180deg,#ddf5ff,#72cdfc);box-shadow:0 4px 0 rgba(0,67,108,.8)}.btn.danger{background:linear-gradient(180deg,#ff858c,#ff4e62);box-shadow:0 4px 0 rgba(116,0,14,.82);color:white}
-.btn:active,.btn.down{transform:translateY(3px);box-shadow:0 1px 0 rgba(105,76,0,.85)}.btn:disabled{filter:grayscale(.75) brightness(.75);opacity:.70;cursor:not-allowed;box-shadow:none}
+.btn.secondary{background:linear-gradient(180deg,#ddf5ff,#72cdfc);box-shadow:0 4px 0 rgba(0,67,108,.8)}
+.btn.danger{background:linear-gradient(180deg,#ff858c,#ff4e62);box-shadow:0 4px 0 rgba(116,0,14,.82);color:white}
+.btn:active,.btn.down{transform:translateY(3px);box-shadow:0 1px 0 rgba(105,76,0,.85)}
+.btn:disabled{filter:grayscale(.75) brightness(.75);opacity:.70;cursor:not-allowed;box-shadow:none}
 .stage{height:calc(100dvh - 20px);display:flex;flex-direction:column;min-height:0}
 .topbar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;border-bottom:1px solid rgba(255,255,255,.13);flex:0 0 auto}
-.gauge{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:8px}.gauge label{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-weight:1000;letter-spacing:.06em}
+.gauge{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:8px}
+.gauge label{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-weight:1000;letter-spacing:.06em}
 .bar{height:11px;border-radius:999px;background:rgba(0,0,0,.38);overflow:hidden;margin-top:7px}.fill{height:100%;width:0;border-radius:999px;transition:width .12s linear}
 #wrap{position:relative;flex:1;min-height:0;background:#081521;overflow:hidden}canvas{display:block;width:100%;height:100%;background:#081521}
 .overlay{position:absolute;left:14px;top:14px;background:rgba(4,14,24,.78);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px 14px;max-width:min(520px,calc(100% - 28px));backdrop-filter:blur(6px)}
 .phase{font-weight:1000;color:var(--accent);font-size:17px;letter-spacing:.03em}.guide{font-size:15px;line-height:1.3;margin-top:4px}
-.report{display:none;position:absolute;right:14px;top:14px;width:min(410px,calc(100% - 28px));background:rgba(7,18,30,.95);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:18px;box-shadow:0 18px 45px rgba(0,0,0,.42)}
+.report{display:none;position:absolute;right:14px;top:14px;width:min(430px,calc(100% - 28px));background:rgba(7,18,30,.95);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:18px;box-shadow:0 18px 45px rgba(0,0,0,.42)}
 .report.show{display:block}.report h2{margin:0 0 8px;font-size:25px}.report p{color:var(--muted);line-height:1.35}
 .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 110px;gap:8px;padding:8px;border-top:1px solid rgba(255,255,255,.13);background:rgba(3,10,18,.72);flex:0 0 auto}
 kbd{background:rgba(255,255,255,.13);border-radius:6px;padding:1px 6px}
@@ -43,18 +46,18 @@ kbd{background:rgba(255,255,255,.13);border-radius:6px;padding:1px 6px}
 <div class="app">
   <aside class="card sidebar">
     <h1>Reentry Challenge</h1>
-    <div class="subtitle">The capsule enters at an angle, slows in thick air, uses a drogue chute, then deploys the main chute for landing.</div>
+    <div class="subtitle">Survive the side-profile reentry first. After the main chute opens, switch to overhead recovery view and steer toward the target.</div>
     <div id="missions"></div>
     <button class="btn" id="start">Start Reentry</button>
     <button class="btn secondary" id="reset">Reset</button>
-    <div class="help">Controls: <kbd>←</kbd>/<kbd>→</kbd> make small steering tilts, <kbd>C</kbd> centers the heat shield, and <kbd>Space</kbd> deploys the next safe chute.</div>
+    <div class="help">Reentry controls: <kbd>←</kbd>/<kbd>→</kbd> tilt, <kbd>C</kbd> centers shield, <kbd>Space</kbd> deploys the next safe chute. Recovery controls: steer left/right and flare near touchdown.</div>
   </aside>
   <main class="card stage">
     <div class="topbar">
       <div class="gauge"><label>HEAT <span id="heatTxt">0%</span></label><div class="bar"><div class="fill" id="heatFill"></div></div></div>
       <div class="gauge"><label>SPEED <span id="speedTxt">0 km/s</span></label><div class="bar"><div class="fill" id="speedFill"></div></div></div>
       <div class="gauge"><label>ALTITUDE <span id="altTxt">0 km</span></label><div class="bar"><div class="fill" id="altFill"></div></div></div>
-      <div class="gauge"><label>SHIELD <span id="shieldTxt">GOOD</span></label><div class="bar"><div class="fill" id="shieldFill"></div></div></div>
+      <div class="gauge"><label>STATUS <span id="statusTxt">READY</span></label><div class="bar"><div class="fill" id="statusFill"></div></div></div>
     </div>
     <div id="wrap">
       <canvas id="game"></canvas>
@@ -75,12 +78,12 @@ kbd{background:rgba(255,255,255,.13);border-radius:6px;padding:1px 6px}
 const canvas=document.getElementById('game'), ctx=canvas.getContext('2d'), $=id=>document.getElementById(id);
 const SIM_SPEED=.70;
 const missions=[
-  {id:'training',name:'Training Reentry',desc:'Forgiving heat and easy chute timing.',alt:122,speed:7.1,offset:32,target:650,help:true},
-  {id:'heat',name:'Heat Shield Test',desc:'Hold the shield steady through plasma.',alt:126,speed:7.7,offset:31,target:720,help:false},
-  {id:'target',name:'Recovery Zone',desc:'Survive and land near the target.',alt:118,speed:7.4,offset:30,target:680,help:false},
-  {id:'emergency',name:'Emergency Return',desc:'Faster entry, less margin.',alt:112,speed:8.0,offset:34,target:620,help:false}
+  {id:'training',name:'Training Reentry',desc:'Forgiving reentry and wide target.',alt:122,speed:7.1,offset:32,target:0,help:true,wind:.10,targetR:105},
+  {id:'heat',name:'Heat Shield Test',desc:'Hold the shield steady through plasma.',alt:126,speed:7.7,offset:31,target:0,help:false,wind:.16,targetR:95},
+  {id:'target',name:'Recovery Zone',desc:'Steer under chute to the recovery zone.',alt:118,speed:7.4,offset:30,target:0,help:false,wind:.20,targetR:80},
+  {id:'emergency',name:'Emergency Return',desc:'Faster entry, smaller recovery zone.',alt:112,speed:8.0,offset:34,target:0,help:false,wind:.25,targetR:65}
 ];
-let selected=missions[0], input={left:false,right:false,center:false}, state, particles=[], noticeTimer=0;
+let selected=missions[0], input={left:false,right:false,center:false}, state, particles=[], noticeTimer=0, transitionTimer=0;
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function lerp(a,b,t){return a+(b-a)*t}
@@ -89,13 +92,15 @@ function fmtSpeed(s){return s>=1?`${s.toFixed(1)} km/s`:`${Math.round(s*1000)} m
 function ship(W,H){return{x:W*.52,y:H*.47}}
 function groundY(W,H){const s=ship(W,H);return lerp(H+150,s.y+82,clamp((12-state.alt)/12,0,1))}
 function totalAngle(){return state.flightOffset+state.tilt}
-function drogueReady(){return !state.drogue && state.alt<42 && state.speed<4.2 && Math.abs(state.tilt)<34}
-function mainChuteReady(){return state.drogue && !state.chute && state.alt<20 && state.speed<1.75 && Math.abs(state.tilt)<34}
-function chuteReady(){return mainChuteReady()}
+function drogueReady(){return !state.drogue && state.view==='reentry' && state.alt<42 && state.speed<4.2 && Math.abs(state.tilt)<34}
+function mainChuteReady(){return state.drogue && !state.chute && state.view==='reentry' && state.alt<20 && state.speed<1.75 && Math.abs(state.tilt)<34}
 
 function init(){
-  return{running:false,outcome:null,t:0,alt:selected.alt,speed:selected.speed,range:0,target:selected.target,
-    flightOffset:selected.offset,tilt:0,heat:2,maxHeat:0,skip:0,drogue:false,chute:false,chuteBad:false,maxMisalign:0,maxOffset:selected.offset};
+  return{
+    view:'reentry',running:false,outcome:null,t:0,alt:selected.alt,speed:selected.speed,range:-360,target:selected.target,
+    flightOffset:selected.offset,tilt:0,heat:2,maxHeat:0,skip:0,drogue:false,chute:false,chuteBad:false,maxMisalign:0,
+    recX:-120,recY:-520,recVy:44,recVx:0,flare:0,wind:selected.wind,landingSpeed:0,landingMiss:0
+  };
 }
 state=init();
 
@@ -107,39 +112,79 @@ function renderMissions(){
   document.querySelectorAll('.mission').forEach(el=>el.onclick=()=>{selected=missions.find(m=>m.id===el.dataset.id);reset();renderMissions()});
 }
 renderMissions();
-function start(){state=init();state.running=true;particles=[];hideReport();noticeTimer=0}
-function reset(){state=init();particles=[];hideReport();noticeTimer=0}
+
+function start(){state=init();state.running=true;particles=[];hideReport();noticeTimer=0;transitionTimer=0;setRecoveryLabels(false)}
+function reset(){state=init();particles=[];hideReport();noticeTimer=0;transitionTimer=0;setRecoveryLabels(false)}
 $('start').onclick=start;$('reset').onclick=reset;$('abort').onclick=reset;$('tryAgain').onclick=start;
 
 function hold(id,key){const b=$(id),set=v=>{input[key]=v;b.classList.toggle('down',v)};b.addEventListener('pointerdown',e=>{e.preventDefault();set(true)});addEventListener('pointerup',()=>set(false));addEventListener('pointercancel',()=>set(false))}
 hold('left','left');hold('right','right');hold('center','center');
-addEventListener('keydown',e=>{if(e.key==='ArrowLeft')input.left=true;if(e.key==='ArrowRight')input.right=true;if(e.key.toLowerCase()==='c')input.center=true;if(e.key===' '){e.preventDefault();deployChute()}})
-addEventListener('keyup',e=>{if(e.key==='ArrowLeft')input.left=false;if(e.key==='ArrowRight')input.right=false;if(e.key.toLowerCase()==='c')input.center=false})
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft')input.left=true;
+  if(e.key==='ArrowRight')input.right=true;
+  if(e.key.toLowerCase()==='c')input.center=true;
+  if(e.key===' '){e.preventDefault();deployChute()}
+});
+addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft')input.left=false;
+  if(e.key==='ArrowRight')input.right=false;
+  if(e.key.toLowerCase()==='c')input.center=false;
+});
 $('chute').onclick=deployChute;
 
+function setRecoveryLabels(isRecovery){
+  if(isRecovery){
+    $('left').textContent='STEER LEFT ◀';
+    $('center').textContent='FLARE / SLOW';
+    $('right').textContent='STEER RIGHT ▶';
+  }else{
+    $('left').textContent='TILT LEFT ◀';
+    $('center').textContent='CENTER SHIELD';
+    $('right').textContent='TILT RIGHT ▶';
+  }
+}
+
 function deployChute(){
-  if(!state.running||state.outcome||state.chute)return;
+  if(!state.running||state.outcome||state.view!=='reentry')return;
   if(!state.drogue){
-    if(!drogueReady()){noticeTimer=1.2;return;}
+    if(!drogueReady()){noticeTimer=1.2;return}
     state.drogue=true;burst(38,'drogue');noticeTimer=0;return;
   }
-  if(!mainChuteReady()){noticeTimer=1.2;return;}
-  state.chute=true;burst(44,'chute');
+  if(!mainChuteReady()){noticeTimer=1.2;return}
+  state.chute=true;burst(44,'chute');beginRecovery();
+}
+
+function beginRecovery(){
+  state.view='recovery';
+  transitionTimer=1.2;
+  // Convert the side-profile range error into a starting overhead drift.
+  state.recX=clamp((state.range-state.target)*.22,-230,230);
+  state.recY=-520;
+  state.recVy=selected.help?36:42;
+  state.recVx=state.wind*60;
+  state.alt=2.5; // km equivalent for the HUD during recovery.
+  state.speed=.18;
+  setRecoveryLabels(true);
 }
 
 function update(dt){
   dt=Math.min(dt*SIM_SPEED,.045);
   if(noticeTimer>0)noticeTimer=Math.max(0,noticeTimer-dt);
+  if(transitionTimer>0)transitionTimer=Math.max(0,transitionTimer-dt);
   if(!state.running||state.outcome)return;
   state.t+=dt;
+  if(state.view==='reentry') updateReentry(dt);
+  else updateRecovery(dt);
+  particles.forEach(p=>p.age+=dt);particles=particles.filter(p=>p.age<p.life);
+}
 
+function updateReentry(dt){
   const steer=(input.right?1:0)-(input.left?1:0);
   if(steer)state.tilt=clamp(state.tilt+steer*58*dt,-36,36);
   if(input.center)state.tilt=lerp(state.tilt,0,.24);
   state.tilt=lerp(state.tilt,0,(selected.help ? .027 : .018));
   state.maxMisalign=Math.max(state.maxMisalign,Math.abs(state.tilt));
 
-  // Entry starts angled, then naturally trends vertical as gravity dominates and speed drops.
   const verticalize=clamp((7.2-state.speed)/6.5,0,1)*.75+clamp((58-state.alt)/58,0,1)*.55;
   state.flightOffset=lerp(state.flightOffset,0,dt*(.08+verticalize*.90));
 
@@ -148,51 +193,77 @@ function update(dt){
   const vertical=Math.cos(state.flightOffset*Math.PI/180);
   const horizontal=Math.abs(Math.sin(state.flightOffset*Math.PI/180));
 
-  let descent=state.speed*(.24+.70*vertical+.12*mis);
-  if(state.chute&&!state.chuteBad)descent*=.16;
+  let descent=state.speed*(.18+.56*vertical+.10*mis);
+  if(state.alt<42&&!state.chute)descent*=.68;
+  if(state.drogue&&!state.chute)descent*=.40;
   state.alt=Math.max(0,state.alt-descent*dt*2.65);
 
-  // Horizontal travel fades as the path becomes vertical, so landing becomes possible.
   state.range+=state.speed*dt*(state.drogue?18:(24+80*horizontal))+state.tilt*dt*1.05;
 
-  let drag=density*state.speed*state.speed*(.040+(1-mis)*.032+mis*.012+((state.chute && !state.chuteBad ? .85 : 0)));
+  const lowAir=clamp((45-state.alt)/45,0,1);
+  let drag=density*state.speed*state.speed*(.055+(1-mis)*.045+mis*.012+lowAir*.060+((state.drogue && !state.chute ? .42 : 0)));
   if(selected.help&&state.alt<60&&state.speed>1.8)drag*=1.18;
-  state.speed=Math.max((state.chute ? .055 : .13),state.speed-drag*dt);
+  state.speed=Math.max((state.drogue ? .22 : .13),state.speed-drag*dt);
 
   const heatBuild=density*Math.pow(state.speed,2.28)*(.33+mis*.92+vertical*.10);
-  const cooling=(.14+((state.speed<2.3 ? .34 : 0))+((state.chute ? .20 : 0)))*dt*18;
+  const cooling=(.14+((state.speed<2.3 ? .34 : 0))+((state.drogue ? .12 : 0)))*dt*18;
   state.heat=clamp(state.heat+heatBuild*dt-cooling,0,120);
   if(selected.help&&state.heat>84)state.heat-=.42;
   state.maxHeat=Math.max(state.maxHeat,state.heat);
 
-  if(state.alt>68&&state.speed>5.2&&state.flightOffset>30&&Math.abs(state.tilt)<7){state.skip+=dt*10}else state.skip=Math.max(0,state.skip-dt*12);
+  if(state.alt>68&&state.speed>5.2&&state.flightOffset>30&&Math.abs(state.tilt)<7)state.skip+=dt*10;
+  else state.skip=Math.max(0,state.skip-dt*12);
+
   if(state.heat>=112)end('Burned Up','The capsule overheated. Keep the shield centered and avoid large tilts in plasma.');
   if(state.skip>=100)end('Skipped Out','The entry stayed too shallow high in the atmosphere and skipped away.');
-
-  if(state.alt<=0){
-    const miss=Math.abs(state.range-state.target);
-    if(state.chute&&!state.chuteBad&&state.speed<.55&&miss<260)end('Safe Landing',`You survived reentry and landed ${Math.round(miss)} km from recovery.`);
-    else if(state.chute&&!state.chuteBad)end('Hard Landing',`You survived the heat, but landing was rough or far from recovery. Miss: ${Math.round(miss)} km.`);
-    else end('Crash Landing','The capsule reached the ground without completing the drogue and main chute landing sequence.');
-  }
+  if(state.alt<=0)end('Crash Landing','The capsule reached the ground before completing the drogue and main chute sequence.');
 
   if(state.heat>12&&state.speed>1.1&&Math.random()<.7)burst(1,'plasma');
   if(steer&&Math.random()<.35)burst(1,'rcs');
-  particles.forEach(p=>p.age+=dt);particles=particles.filter(p=>p.age<p.life);
+}
+
+function updateRecovery(dt){
+  const steer=(input.right?1:0)-(input.left?1:0);
+  if(steer)state.recVx+=steer*42*dt;
+  if(input.center){
+    state.flare=clamp(state.flare+dt*1.8,0,1);
+    state.recVy=lerp(state.recVy,22,.08);
+  }else{
+    state.flare=lerp(state.flare,0,.08);
+  }
+  state.recVx+=Math.sin(state.t*.9)*state.wind*6*dt;
+  state.recVx=clamp(state.recVx,-72,72);
+
+  // descent accelerates slowly but can be managed with flare
+  const targetVy=state.flare>.25?24:42;
+  state.recVy=lerp(state.recVy,targetVy,.025);
+  state.recX+=state.recVx*dt;
+  state.recY+=state.recVy*dt;
+  state.speed=Math.hypot(state.recVx,state.recVy)/220;
+  state.alt=Math.max(0,(520-state.recY)/210);
+
+  if(state.recY>=0){
+    const miss=Math.hypot(state.recX,state.target);
+    state.landingMiss=miss;
+    state.landingSpeed=state.recVy;
+    if(miss<selected.targetR&&state.recVy<34)end('Safe Recovery',`Splashdown/landing inside the recovery zone. Distance from target: ${Math.round(miss)} m.`);
+    else if(miss<selected.targetR*1.8)end('Recovered Nearby',`Safe landing, but not in the center of the recovery zone. Distance from target: ${Math.round(miss)} m.`);
+    else end('Missed Recovery Zone',`Safe descent, but you drifted away from the target. Distance from target: ${Math.round(miss)} m.`);
+  }
 }
 
 function end(title,body){
   if(state.outcome)return;
   state.outcome=title;state.running=false;
   $('reportTitle').textContent=title;
-  $('reportBody').innerHTML=`${body}<br><br>Max heat: ${Math.round(state.maxHeat)}%<br>Drogue: ${state.drogue ? 'deployed' : 'not deployed'}<br>Main chute: ${state.chute ? 'deployed' : 'not deployed'}<br>Worst shield tilt: ${Math.round(state.maxMisalign)}°<br>Final speed: ${fmtSpeed(state.speed)}<br>Final path angle: ${Math.round(state.flightOffset)}° from vertical<br>Range error: ${Math.round(Math.abs(state.range-state.target))} km`;
+  $('reportBody').innerHTML=`${body}<br><br>Max heat: ${Math.round(state.maxHeat)}%<br>Drogue: ${state.drogue?'deployed':'not deployed'}<br>Main chute: ${state.chute?'deployed':'not deployed'}<br>Worst shield tilt: ${Math.round(state.maxMisalign)}°<br>Final speed: ${fmtSpeed(state.speed)}<br>Recovery miss: ${Math.round(state.landingMiss||Math.abs(state.range-state.target))} ${state.view==='recovery'?'m':'km'}`;
   $('report').classList.add('show');
 }
 function hideReport(){$('report').classList.remove('show')}
 
 function burst(n,type){
   for(let i=0;i<n;i++)particles.push({
-    type,age:0,life:(type==='plasma' ? .9 : .65),
+    type,age:0,life:(type==='plasma' ? .9 : .75),
     x:(Math.random()-.5)*62,
     y:type==='plasma'?38+(Math.random()-.5)*18:-10+(Math.random()-.5)*34,
     vx:type==='plasma'?(Math.random()-.5)*45:(Math.random()-.5)*80,
@@ -203,6 +274,7 @@ function burst(n,type){
 
 function phase(){
   if(!state.running)return'READY';
+  if(state.view==='recovery')return transitionTimer>0?'SWITCHING TO OVERHEAD RECOVERY':'OVERHEAD RECOVERY STEERING';
   if(drogueReady())return'DROGUE READY';
   if(mainChuteReady())return'MAIN CHUTE READY';
   if(state.alt>94)return'ANGLED ENTRY';
@@ -210,30 +282,33 @@ function phase(){
   if(state.heat>35&&state.speed>2)return'PLASMA AROUND HEAT SHIELD';
   if(state.drogue&&!state.chute)return'DROGUE BRAKING';
   if(state.alt>18)return'THICK AIR BRAKING';
-  if(state.chute)return'MAIN CHUTE DESCENT';
   return'FINAL DESCENT';
 }
 function guide(){
   if(state.outcome)return'Review the flight report and try again.';
   if(noticeTimer>0)return'Not yet — wait until the button says DEPLOY DROGUE or DEPLOY MAIN CHUTE.';
-  if(!state.running)return'Start reentry. First survive plasma, then use drogue, then main chute.';
-  if(drogueReady())return'DROGUE READY: deploy the drogue to slow and stabilize the capsule.';
-  if(mainChuteReady())return'MAIN CHUTE READY: deploy now for landing.';
+  if(!state.running)return'Start reentry. Survive the side profile, then steer in overhead recovery.';
+  if(state.view==='recovery')return'Overhead view: steer under the parachute toward the recovery zone. Use FLARE near landing.';
+  if(drogueReady())return'DROGUE READY: deploy the drogue to slow and stabilize.';
+  if(mainChuteReady())return'MAIN CHUTE READY: deploy to switch into overhead recovery view.';
   if(Math.abs(state.tilt)>28&&state.heat>25)return'Shield exposed. Press CENTER SHIELD.';
   if(state.heat>78)return'Heating is high. Center the heat shield and avoid big tilts.';
   if(state.drogue&&!state.chute)return'Drogue is slowing you down. Wait for MAIN CHUTE READY.';
-  if(state.alt<24&&!state.chute)return'Getting low. Keep steady and wait for the chute sequence.';
   if(state.flightOffset>18)return'Entry path is still angled. Gravity will pull it more vertical as speed drops.';
-  return'Good. Path is becoming vertical. Keep shield alignment stable.';
+  return'Good. Keep the shield aligned and wait for the parachute sequence.';
 }
 
 function draw(){
   const W=canvas.clientWidth,H=canvas.clientHeight;
   ctx.clearRect(0,0,W,H);
-  drawBackground(W,H);drawPathArc(W,H);drawVelocityArrow(W,H);drawTarget(W,H);drawCapsule(W,H);drawParticles(W,H);drawChute(W,H);drawNav(W,H);drawHUD();
+  if(state.view==='recovery')drawRecovery(W,H);
+  else drawReentry(W,H);
+  if(transitionTimer>0)drawTransition(W,H);
+  drawHUD();
 }
-function mix(a,b,t){return a.map((v,i)=>Math.round(lerp(v,b[i],t)))}function css(a){return`rgb(${a[0]},${a[1]},${a[2]})`}
 
+function mix(a,b,t){return a.map((v,i)=>Math.round(lerp(v,b[i],t)))}function css(a){return`rgb(${a[0]},${a[1]},${a[2]})`}
+function drawReentry(W,H){drawBackground(W,H);drawPathArc(W,H);drawVelocityArrow(W,H);drawCapsule(W,H);drawParticles(W,H);drawDrogueOrChute(W,H);drawNav(W,H)}
 function drawBackground(W,H){
   const p=clamp((122-state.alt)/122,0,1);
   const top=mix([4,12,26],[70,151,208],clamp((p-.05)/.55,0,1));let bot=mix([8,22,45],[202,103,46],clamp((p-.36)/.28,0,1));bot=mix(bot,[105,164,112],clamp((p-.78)/.22,0,1));
@@ -246,107 +321,63 @@ function drawBackground(W,H){
   ctx.restore();
   const gy=groundY(W,H);if(gy<H+120){ctx.fillStyle='rgba(68,128,82,.92)';ctx.beginPath();ctx.moveTo(0,gy);ctx.quadraticCurveTo(W*.45,gy-22,W,gy+10);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.fill()}
 }
-
 function drawPathArc(W,H){
-  const s=ship(W,H), a0=state.flightOffset*Math.PI/180;
-  ctx.save();ctx.translate(s.x,s.y);
-  ctx.strokeStyle='rgba(255,209,61,.70)';ctx.lineWidth=5;ctx.setLineDash([12,10]);
-  ctx.beginPath();ctx.moveTo(0,0);
-  // Predicted path curves from angled entry to vertical descent.
-  for(let i=1;i<=26;i++){
-    const t=i/26, a=lerp(a0,0,t*.85), dist=t*Math.min(W,H)*.48;
-    ctx.lineTo(Math.sin(a)*dist, Math.cos(a)*dist);
-  }
-  ctx.stroke();ctx.setLineDash([]);
-  ctx.font='bold 13px system-ui';ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillText('PREDICTED PATH BECOMES VERTICAL',22,118);
-  ctx.restore();
+  const s=ship(W,H),a0=state.flightOffset*Math.PI/180;ctx.save();ctx.translate(s.x,s.y);ctx.strokeStyle='rgba(255,209,61,.70)';ctx.lineWidth=5;ctx.setLineDash([12,10]);ctx.beginPath();ctx.moveTo(0,0);
+  for(let i=1;i<=26;i++){const t=i/26,a=lerp(a0,0,t*.85),dist=t*Math.min(W,H)*.48;ctx.lineTo(Math.sin(a)*dist,Math.cos(a)*dist)}
+  ctx.stroke();ctx.setLineDash([]);ctx.font='bold 13px system-ui';ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillText('SIDE PROFILE: PATH BENDS TOWARD VERTICAL',22,118);ctx.restore();
 }
-
 function drawVelocityArrow(W,H){
-  const s=ship(W,H), a=totalAngle()*Math.PI/180;
-  ctx.save();
-  ctx.translate(s.x,s.y);
-  ctx.strokeStyle='rgba(255,255,255,.78)';ctx.lineWidth=4;
-  ctx.beginPath();ctx.moveTo(-Math.sin(a)*120, -Math.cos(a)*120);ctx.lineTo(-Math.sin(a)*62, -Math.cos(a)*62);ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.90)';
-  const hx=-Math.sin(a)*50, hy=-Math.cos(a)*50;
-  ctx.beginPath();ctx.arc(hx,hy,0.1,0,Math.PI*2);ctx.fill();
-  ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('AIRFLOW INTO HEAT SHIELD',-Math.sin(a)*160,-Math.cos(a)*160);
-  ctx.restore();
+  const s=ship(W,H),a=totalAngle()*Math.PI/180;ctx.save();ctx.translate(s.x,s.y);ctx.strokeStyle='rgba(255,255,255,.78)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-Math.sin(a)*120,-Math.cos(a)*120);ctx.lineTo(-Math.sin(a)*62,-Math.cos(a)*62);ctx.stroke();ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.90)';ctx.fillText('AIRFLOW INTO HEAT SHIELD',-Math.sin(a)*160,-Math.cos(a)*160);ctx.restore();
 }
-
-function drawTarget(W,H){
-  if(state.alt>20)return;
-  const s=ship(W,H), gy=groundY(W,H), miss=state.target-state.range, x=clamp(s.x+miss*.58,90,W-90);
-  ctx.save();ctx.translate(x,gy);ctx.strokeStyle='rgba(255,209,61,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-6,98,0,Math.PI*2);ctx.stroke();ctx.fillStyle='white';ctx.fillRect(-90,-8,180,8);ctx.fillStyle='#ffd13d';ctx.fillRect(-56,-21,112,13);ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillStyle='white';ctx.fillText('RECOVERY ZONE',0,-34);ctx.restore();
-}
-
 function drawCapsule(W,H){
-  const s=ship(W,H), a=totalAngle()*Math.PI/180;
-  ctx.save();ctx.translate(s.x,s.y);ctx.rotate(a);
-  if(state.heat>9&&state.speed>1.1)drawPlasma();
-  drawAlignmentGlow();
-  drawCapsuleBody();
-  ctx.restore();
+  const s=ship(W,H),a=totalAngle()*Math.PI/180;ctx.save();ctx.translate(s.x,s.y);ctx.rotate(a);if(state.heat>9&&state.speed>1.1)drawPlasma();drawAlignmentGlow();drawCapsuleBody();ctx.restore();
 }
-
 function drawPlasma(){
-  const intensity=clamp((state.heat-7)/90,0,1), mis=clamp(Math.abs(state.tilt)/36,0,1), flick=.76+.24*Math.sin(state.t*22);
-  const grad=ctx.createRadialGradient(0,43,4,0,48,122);grad.addColorStop(0,`rgba(255,255,225,${.24*intensity*flick})`);grad.addColorStop(.22,`rgba(255,211,74,${.46*intensity*flick})`);grad.addColorStop(.54,`rgba(255,91,32,${.40*intensity})`);grad.addColorStop(1,'rgba(255,70,0,0)');
-  ctx.fillStyle=grad;ctx.beginPath();ctx.ellipse(0,49,88+intensity*52+mis*24,43+intensity*34+mis*18,0,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=.86*intensity;ctx.strokeStyle=mis>.60?'#ff4e62':'#ffd45b';ctx.lineWidth=7+intensity*6;ctx.beginPath();ctx.ellipse(0,38,43,12,0,0,Math.PI);ctx.stroke();
-  for(let i=0;i<20;i++){const x=(i-9.5)*8+Math.sin(state.t*8+i)*5,len=64+intensity*105+(i%4)*10;ctx.globalAlpha=(.08+.026*(i%5))*intensity;ctx.strokeStyle=i%2?'#ffcd51':'#ff6231';ctx.lineWidth=2+(i%3);ctx.beginPath();ctx.moveTo(x*.45,42);ctx.quadraticCurveTo(x,74+len*.25,x*.72,82+len);ctx.stroke()}ctx.globalAlpha=1;
+  const intensity=clamp((state.heat-7)/90,0,1),mis=clamp(Math.abs(state.tilt)/36,0,1),flick=.76+.24*Math.sin(state.t*22);const grad=ctx.createRadialGradient(0,43,4,0,48,122);grad.addColorStop(0,`rgba(255,255,225,${.24*intensity*flick})`);grad.addColorStop(.22,`rgba(255,211,74,${.46*intensity*flick})`);grad.addColorStop(.54,`rgba(255,91,32,${.40*intensity})`);grad.addColorStop(1,'rgba(255,70,0,0)');ctx.fillStyle=grad;ctx.beginPath();ctx.ellipse(0,49,88+intensity*52+mis*24,43+intensity*34+mis*18,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.86*intensity;ctx.strokeStyle=mis>.60?'#ff4e62':'#ffd45b';ctx.lineWidth=7+intensity*6;ctx.beginPath();ctx.ellipse(0,38,43,12,0,0,Math.PI);ctx.stroke();for(let i=0;i<20;i++){const x=(i-9.5)*8+Math.sin(state.t*8+i)*5,len=64+intensity*105+(i%4)*10;ctx.globalAlpha=(.08+.026*(i%5))*intensity;ctx.strokeStyle=i%2?'#ffcd51':'#ff6231';ctx.lineWidth=2+(i%3);ctx.beginPath();ctx.moveTo(x*.45,42);ctx.quadraticCurveTo(x,74+len*.25,x*.72,82+len);ctx.stroke()}ctx.globalAlpha=1;
 }
-
-function drawAlignmentGlow(){
-  const mis=clamp(Math.abs(state.tilt)/36,0,1);ctx.save();ctx.globalAlpha=.10+.18*(1-mis);ctx.fillStyle=mis>.65?'#ff4e62':'#4be187';ctx.beginPath();ctx.ellipse(0,0,62,86,0,0,Math.PI*2);ctx.fill();ctx.restore();
-}
-
-function drawCapsuleBody(){
-  ctx.fillStyle='#e9f2f6';ctx.strokeStyle='#142330';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,-48);ctx.quadraticCurveTo(34,-34,36,8);ctx.quadraticCurveTo(34,25,25,32);ctx.lineTo(-25,32);ctx.quadraticCurveTo(-34,25,-36,8);ctx.quadraticCurveTo(-34,-34,0,-48);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillStyle=state.heat>45?'#ff7c2e':'#2a333b';ctx.strokeStyle='#121a22';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,34,39,13,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#6ecaff';ctx.beginPath();ctx.arc(12,-15,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1.2;for(let x=-22;x<=22;x+=11){ctx.beginPath();ctx.moveTo(x,25);ctx.lineTo(x+5,39);ctx.stroke()}
-}
-
-function drawParticles(W,H){
-  const s=ship(W,H), a=totalAngle()*Math.PI/180, ca=Math.cos(a), sa=Math.sin(a);
-  particles.forEach(p=>{const age=p.age/p.life, lx=p.x+p.vx*p.age, ly=p.y+p.vy*p.age, x=s.x+lx*ca-ly*sa, y=s.y+lx*sa+ly*ca;ctx.globalAlpha=(1-age)*((p.type==='plasma' ? .8 : .55));ctx.fillStyle=p.type==='plasma'?'#ff9a35':'#c7eeff';ctx.beginPath();ctx.arc(x,y,p.r*(1-age)+1,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
-}
-
-function drawChute(W,H){
-  if(!state.drogue||state.chuteBad)return;
-  const s=ship(W,H);
-  ctx.save();
-  if(state.chute){
-    ctx.translate(s.x,s.y-82);
-    ctx.strokeStyle='white';ctx.lineWidth=1.6;
-    for(let x=-48;x<=48;x+=16){ctx.beginPath();ctx.moveTo(0,62);ctx.lineTo(x,3);ctx.stroke()}
-    ctx.fillStyle='rgba(255,255,255,.95)';
-    ctx.beginPath();ctx.arc(0,0,64,Math.PI,0);ctx.lineTo(64,0);ctx.quadraticCurveTo(0,28,-64,0);ctx.fill();
-  }else{
-    ctx.translate(s.x,s.y-58);
-    ctx.strokeStyle='rgba(255,255,255,.88)';ctx.lineWidth=1.4;
-    for(let x=-26;x<=26;x+=13){ctx.beginPath();ctx.moveTo(0,42);ctx.lineTo(x,2);ctx.stroke()}
-    ctx.fillStyle='rgba(255,220,120,.92)';
-    ctx.beginPath();ctx.arc(0,0,34,Math.PI,0);ctx.lineTo(34,0);ctx.quadraticCurveTo(0,15,-34,0);ctx.fill();
-  }
+function drawAlignmentGlow(){const mis=clamp(Math.abs(state.tilt)/36,0,1);ctx.save();ctx.globalAlpha=.10+.18*(1-mis);ctx.fillStyle=mis>.65?'#ff4e62':'#4be187';ctx.beginPath();ctx.ellipse(0,0,62,86,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+function drawCapsuleBody(){ctx.fillStyle='#e9f2f6';ctx.strokeStyle='#142330';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,-48);ctx.quadraticCurveTo(34,-34,36,8);ctx.quadraticCurveTo(34,25,25,32);ctx.lineTo(-25,32);ctx.quadraticCurveTo(-34,25,-36,8);ctx.quadraticCurveTo(-34,-34,0,-48);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle=state.heat>45?'#ff7c2e':'#2a333b';ctx.strokeStyle='#121a22';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,34,39,13,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#6ecaff';ctx.beginPath();ctx.arc(12,-15,7,0,Math.PI*2);ctx.fill()}
+function drawParticles(W,H){const s=ship(W,H),a=totalAngle()*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);particles.forEach(p=>{const age=p.age/p.life,lx=p.x+p.vx*p.age,ly=p.y+p.vy*p.age,x=s.x+lx*ca-ly*sa,y=s.y+lx*sa+ly*ca;ctx.globalAlpha=(1-age)*((p.type==='plasma' ? .8 : .55));ctx.fillStyle=p.type==='plasma'?'#ff9a35':'#c7eeff';ctx.beginPath();ctx.arc(x,y,p.r*(1-age)+1,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1}
+function drawDrogueOrChute(W,H){
+  if(!state.drogue)return;const s=ship(W,H);ctx.save();
+  if(state.chute){ctx.translate(s.x,s.y-82);ctx.strokeStyle='white';ctx.lineWidth=1.6;for(let x=-48;x<=48;x+=16){ctx.beginPath();ctx.moveTo(0,62);ctx.lineTo(x,3);ctx.stroke()}ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();ctx.arc(0,0,64,Math.PI,0);ctx.lineTo(64,0);ctx.quadraticCurveTo(0,28,-64,0);ctx.fill()}
+  else{ctx.translate(s.x,s.y-58);ctx.strokeStyle='rgba(255,255,255,.88)';ctx.lineWidth=1.4;for(let x=-26;x<=26;x+=13){ctx.beginPath();ctx.moveTo(0,42);ctx.lineTo(x,2);ctx.stroke()}ctx.fillStyle='rgba(255,220,120,.92)';ctx.beginPath();ctx.arc(0,0,34,Math.PI,0);ctx.lineTo(34,0);ctx.quadraticCurveTo(0,15,-34,0);ctx.fill()}
   ctx.restore();
 }
+function drawNav(W,H){const x=W-118,y=H-116,r=74;ctx.save();ctx.globalAlpha=.95;ctx.fillStyle='rgba(3,12,22,.62)';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.20)';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+45);ctx.lineTo(x,y+12);ctx.stroke();const tx=x+Math.sin(state.tilt*Math.PI/180)*48,ty=y-Math.cos(state.tilt*Math.PI/180)*48;ctx.fillStyle=Math.abs(state.tilt)<18?'#4be187':'#ff9e3d';ctx.beginPath();ctx.arc(tx,ty,7,0,Math.PI*2);ctx.fill();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillText('SHIELD ALIGNMENT',x,y+r+18);ctx.restore()}
 
-function drawNav(W,H){
-  const x=W-118,y=H-116,r=74;ctx.save();ctx.globalAlpha=.95;ctx.fillStyle='rgba(3,12,22,.62)';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.20)';ctx.lineWidth=2;ctx.stroke();
-  ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+45);ctx.lineTo(x,y+12);ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.moveTo(x,y-2);ctx.lineTo(x-9,y+16);ctx.lineTo(x+9,y+16);ctx.closePath();ctx.fill();
-  const tx=x+Math.sin(state.tilt*Math.PI/180)*48,ty=y-Math.cos(state.tilt*Math.PI/180)*48;ctx.fillStyle=Math.abs(state.tilt)<18?'#4be187':'#ff9e3d';ctx.beginPath();ctx.arc(tx,ty,7,0,Math.PI*2);ctx.fill();
-  ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillText('SHIELD ALIGNMENT',x,y+r+18);ctx.restore();
+function drawRecovery(W,H){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#79c8ef');g.addColorStop(1,'#3d8968');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(W*.5,H*.52);
+  drawMapGrid(W,H);
+  const targetR=selected.targetR;ctx.strokeStyle='rgba(255,209,61,.78)';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,targetR,0,Math.PI*2);ctx.stroke();ctx.fillStyle='rgba(255,209,61,.18)';ctx.beginPath();ctx.arc(0,0,targetR,0,Math.PI*2);ctx.fill();ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='white';ctx.fillText('RECOVERY TARGET',0,-targetR-18);
+  const x=state.recX,y=state.recY;ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,-H);ctx.lineTo(x,H);ctx.moveTo(-W,y);ctx.lineTo(W,y);ctx.stroke();
+  // capsule/chute top-down
+  ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(state.recVx,state.recVy)*.35);ctx.fillStyle='rgba(255,255,255,.96)';ctx.beginPath();ctx.arc(0,0,28,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#172536';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#ffd13d';ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-34,42,Math.PI,0);ctx.stroke();ctx.restore();
+  // wind arrow
+  ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-W*.38,-H*.36);ctx.lineTo(-W*.25,-H*.36);ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.moveTo(-W*.24,-H*.36);ctx.lineTo(-W*.27,-H*.39);ctx.lineTo(-W*.27,-H*.33);ctx.closePath();ctx.fill();ctx.font='bold 13px system-ui';ctx.fillText('WIND',-W*.31,-H*.39);
+  ctx.restore();
 }
+function drawMapGrid(W,H){ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;for(let x=-W;x<=W;x+=80){ctx.beginPath();ctx.moveTo(x,-H);ctx.lineTo(x,H);ctx.stroke()}for(let y=-H;y<=H;y+=80){ctx.beginPath();ctx.moveTo(-W,y);ctx.lineTo(W,y);ctx.stroke()}}
+function drawTransition(W,H){ctx.save();ctx.globalAlpha=clamp(transitionTimer/1.2,0,1)*.45;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.restore()}
 
 function drawHUD(){
   $('phase').textContent=phase();$('guide').textContent=guide();
   setGauge('heat',state.heat,100,`${Math.round(state.heat)}%`,state.heat>82?'#ff4e62':state.heat>58?'#ff9e3d':'#4be187');
-  setGauge('speed',state.speed,8.2,fmtSpeed(state.speed),'#66caff');setGauge('alt',state.alt,selected.alt,fmtAlt(state.alt),'#ffd13d');
-  const mis=Math.abs(state.tilt),score=100-clamp(mis/36*100,0,100),label=mis<16?'GOOD':mis<28?'TILTED':'EXPOSED';$('shieldTxt').textContent=label;const f=$('shieldFill');f.style.width=`${score}%`;f.style.background=mis<16?'#4be187':mis<28?'#ff9e3d':'#ff4e62';
+  setGauge('speed',state.speed,8.2,fmtSpeed(state.speed),'#66caff');
+  setGauge('alt',state.view==='recovery'?state.alt:selected.alt?state.alt:0,selected.alt,fmtAlt(state.alt),'#ffd13d');
+  if(state.view==='recovery'){
+    const miss=Math.hypot(state.recX,state.target);
+    const score=100-clamp(miss/(selected.targetR*2)*100,0,100);
+    $('statusTxt').textContent=miss<selected.targetR?'ON TARGET':'DRIFT';
+    const f=$('statusFill');f.style.width=`${score}%`;f.style.background=miss<selected.targetR?'#4be187':'#ff9e3d';
+  }else{
+    const mis=Math.abs(state.tilt),score=100-clamp(mis/36*100,0,100),label=mis<16?'GOOD':mis<28?'TILTED':'EXPOSED';
+    $('statusTxt').textContent=label;const f=$('statusFill');f.style.width=`${score}%`;f.style.background=mis<16?'#4be187':mis<28?'#ff9e3d':'#ff4e62';
+  }
   const c=$('chute');
-  if(drogueReady()){c.textContent='DEPLOY DROGUE';c.disabled=false}
+  if(state.view==='recovery'){c.textContent='UNDER CHUTE';c.disabled=true}
+  else if(drogueReady()){c.textContent='DEPLOY DROGUE';c.disabled=false}
   else if(mainChuteReady()){c.textContent='DEPLOY MAIN CHUTE';c.disabled=false}
   else if(state.chute){c.textContent='MAIN CHUTE OUT';c.disabled=true}
   else if(state.drogue){c.textContent='WAIT FOR MAIN';c.disabled=true}
