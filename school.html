@@ -1046,49 +1046,48 @@ const ROCKET_SCHOOL_LEVEL_KEY='slRocketSchoolLevel';
 const ROCKET_SCHOOL_SELECTED_KEY='slRocketSchoolSelected';
 const ROCKET_SCHOOL_LESSONS = [
   {
-    title:'First Launch', level:'Level 1', goal:'Goal: launch a simple rocket and reach 500 m.',
-    instruction:'Start simple. Load the starter rocket, press Launch, and watch the altitude climb.',
-    words:'Rocket word: thrust means push.', primary:'LOAD STARTER ROCKET',
-    parts:['Engine_2','Nose_6'], build:{nose:'Nose_6',stack:['Engine_2'],fins:[]},
-    check:(alt)=>alt>=500, success:'Nice first flight. Next, you will add fins and compare what changes.'
+    title:'Ready, Set, Launch', level:'Level 1', goal:'Goal: launch a ready-made rocket and reach 500 m.',
+    instruction:'Step 1: Load the rocket. Step 2: Launch it. Step 3: Notice how high it goes. Do not change parts yet.',
+    words:'Rocket word: launch means to send something up.', primary:'LOAD READY ROCKET',
+    parts:['Engine_2','Nose_6','Fin_1'], build:{nose:'Nose_6',stack:['Engine_2'],fins:['Fin_1','Fin_1']},
+    check:(alt)=>alt>=500, success:'Great first launch. You know the basic pattern: load, launch, notice. Next, you will test engine push.'
   },
   {
-    title:'Add Fins', level:'Level 2', goal:'Goal: use fins and fly past 1 km.',
-    instruction:'Fins help rockets fly straighter. Load the fin rocket, launch it, then try removing the fins.',
+    title:'More Push', level:'Level 2', goal:'Goal: use engine power to fly past 1 km.',
+    instruction:'Engines push the rocket up. Load the engine rocket, launch it, then try a smaller or bigger engine and compare.',
+    words:'Rocket word: thrust means push.', primary:'LOAD ENGINE TEST ROCKET',
+    parts:['Engine_3','Engine_2','Engine_1','Nose_6','Fin_1'], build:{nose:'Nose_6',stack:['Engine_1'],fins:['Fin_1','Fin_1']},
+    check:(alt)=>alt>=1000, success:'Nice test. More push can help a rocket go higher, but power is only one part of good design. Next, you will look at fins.'
+  },
+  {
+    title:'Fly Straight', level:'Level 3', goal:'Goal: use two fins and fly past 1.2 km.',
+    instruction:'Fins help the rocket stay pointed up. Load the fin rocket, launch it, then try removing the fins to see the difference.',
     words:'Rocket word: stability means the rocket stays pointed the right way.', primary:'LOAD FIN ROCKET',
-    parts:['Engine_2','Nose_6','Fin_1','Fin_2'], build:{nose:'Nose_6',stack:['Engine_2'],fins:['Fin_1','Fin_1']},
-    check:(alt,state)=>alt>=1000 && build.fins.length>=2, success:'Good. The fins helped the rocket stay stable. Next, you will see that fuel has weight.'
+    parts:['Engine_3','Engine_2','Engine_1','Nose_6','Fin_1','Fin_2'], build:{nose:'Nose_6',stack:['Engine_2'],fins:['Fin_2','Fin_2']},
+    check:(alt)=>alt>=1200 && build.fins.length>=2, success:'Good engineering. The fins helped the rocket fly straighter. Next, you will see why fuel helps and hurts.'
   },
   {
-    title:'Fuel Has Weight', level:'Level 3', goal:'Goal: add fuel and watch LIVE MASS drop.',
-    instruction:'Fuel helps the rocket push longer, but fuel also makes it heavier. Watch LIVE MASS during launch.',
+    title:'Fuel Helps, Fuel Weighs', level:'Level 4', goal:'Goal: add fuel and watch LIVE MASS change during flight.',
+    instruction:'Fuel lets the rocket push longer, but fuel also makes the rocket heavier. Watch LIVE MASS while the rocket flies.',
     words:'Rocket word: mass means how much stuff the rocket has.', primary:'LOAD FUEL ROCKET',
-    parts:['Engine_2','Nose_6','Fin_1','Fin_2','Fuel_1'], build:{nose:'Nose_6',stack:['Engine_2','Fuel_1'],fins:['Fin_1','Fin_1']},
-    check:(alt,state)=>alt>=1500 && build.stack.includes('Fuel_1'), success:'Exactly. Fuel burns away, so the rocket gets lighter. Next, you will choose small, medium, or large parts.'
+    parts:['Engine_3','Engine_2','Engine_1','Engine_5','Fuel_1','Nose_6','Fin_1','Fin_2'], build:{nose:'Nose_6',stack:['Engine_2','Fuel_1'],fins:['Fin_2','Fin_2']},
+    check:(alt)=>alt>=1500 && build.stack.includes('Fuel_1'), success:'Exactly. Fuel burns away, so the rocket gets lighter as it flies. Next, you will make smart size choices.'
   },
   {
-    title:'Bigger Is Not Always Better', level:'Level 4', goal:'Goal: reach 5 km by choosing useful part sizes.',
-    instruction:'Small parts are light. Large parts are powerful but heavy. Try different sizes and compare the result.',
-    words:'Rocket word: tradeoff means one choice helps in one way but hurts in another.', primary:'LOAD SIZE TEST ROCKET',
+    title:'Build Smart', level:'Level 5', goal:'Goal: reach 3.5 km by choosing parts that work well together.',
+    instruction:'Small parts are lighter. Large parts can be stronger, but they add weight. Try one change at a time and compare the result.',
+    words:'Rocket word: tradeoff means a choice helps in one way but can hurt in another.', primary:'LOAD SMART BUILD ROCKET',
     parts:['Engine_3','Engine_2','Engine_1','Engine_5','Fuel_1','Fuel_2','Nose_3','Nose_6','Nose_8','Nose_9','Nose_10','Fin_1','Fin_2','Fin_3'],
     build:{nose:'Nose_6',stack:['Engine_1','Fuel_1'],fins:['Fin_2','Fin_2']},
-    check:(alt)=>alt>=5000, success:'Great engineering. You are ready for two-stage rockets.'
+    check:(alt)=>alt>=3500, success:'That is smart building. You balanced push, weight, shape, and stability. Next is the Rocket License challenge.'
   },
   {
-    title:'Drop Empty Stages', level:'Level 5', goal:'Goal: use two stages and drop Stage 1 after burnout.',
-    instruction:'When Stage 1 burns out, press DROP EMPTY STAGE. Empty parts are dead weight.',
-    words:'Rocket word: staging means dropping a used-up part so the rest of the rocket is lighter.', primary:'LOAD TWO-STAGE ROCKET',
-    parts:['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fuel_2','Nose_3','Nose_6','Nose_8','Nose_9','Fin_1','Fin_2','Fin_3'],
-    build:{nose:'Nose_6',stack:['Engine_1','Fuel_1','Engine_5'],fins:['Fin_2','Fin_2']},
-    check:(alt,state)=>alt>=10000 && state.stagingFeedback.length>0, success:'That is staging. You dropped dead weight and kept flying. Next, you will add side boosters.'
-  },
-  {
-    title:'Side Boosters', level:'Level 6', goal:'Goal: use side boosters to help a heavy rocket lift off.',
-    instruction:'Side boosters light with Stage 1. They burn out and separate from the sides of the rocket.',
-    words:'Rocket word: booster means extra engine power used at launch.', primary:'LOAD BOOSTER ROCKET',
-    parts:['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fuel_2','SRB_4','Nose_3','Nose_6','Nose_8','Nose_9','Fin_1','Fin_2','Fin_3'],
+    title:'Rocket License Challenge', level:'Level 6', goal:'Goal: use what you learned to fly past 6 km.',
+    instruction:'Use the full lesson rocket, then make one careful change. Older students can try the NEXT STAGE button after the first engine burns out.',
+    words:'Rocket word: staging means dropping used-up parts so the rest of the rocket is lighter.', primary:'LOAD LICENSE ROCKET',
+    parts:['Engine_3','Engine_2','Engine_1','Engine_5','Engine_6','Fuel_1','Fuel_2','SRB_4','Nose_3','Nose_6','Nose_8','Nose_9','Nose_10','Fin_1','Fin_2','Fin_3'],
     build:{nose:'Nose_6',stack:['Engine_1','Fuel_2','Engine_5','SRB_4'],fins:['Fin_2','Fin_2']},
-    check:(alt)=>alt>=12000 && build.stack.some(id=>isSideBoosterPart(getPart(id))), success:'Rocket School complete. You can now use Easy Mode as a guided lab or move into Career Mode.'
+    check:(alt)=>alt>=6000, success:'Rocket School complete. You earned your Rocket License. Now Easy Mode can become a guided lab, or you can move into Career Mode.'
   }
 ];
 let easySchoolLevel=Math.max(0,Math.min(ROCKET_SCHOOL_LESSONS.length-1,Number(localStorage.getItem(ROCKET_SCHOOL_LEVEL_KEY)||0)));
@@ -1110,7 +1109,7 @@ const MODES = {
     sweetWidth:16, needleSpeed:2.1, minIgnitionQuality:.35, stageGood:.35, stageLate:.9
   }
 };
-let gameMode = localStorage.getItem('slMode') || 'career';
+let gameMode = localStorage.getItem('slMode') || 'easy';
 if(!MODES[gameMode]) gameMode='career';
 let modeBests = {};
 try{ modeBests = JSON.parse(localStorage.getItem('slModeBests')||'{}') || {}; }catch(e){ modeBests = {}; }
@@ -1205,7 +1204,7 @@ function initModeUI(){
   updateModeUI();
 }
 
-function schoolWordsVisible(){ return activeSchoolLesson>=2; }
+function schoolWordsVisible(){ return true; }
 function selectSchoolLesson(i){
   i=Number(i);
   if(!Number.isInteger(i)||i<0||i>=ROCKET_SCHOOL_LESSONS.length) return;
@@ -1227,11 +1226,12 @@ function loadSchoolLesson(i=activeSchoolLesson){
 function schoolLaunchInstruction(){
   const l=currentSchoolLesson();
   const step=activeSchoolLesson+1;
-  if(step<=2) return `<b>Rocket School:</b> ${l.instruction}`;
-  if(step===3) return `<b>Rocket School:</b> Watch <b>LIVE MASS</b>. It should drop while fuel burns.`;
-  if(step===4) return `<b>Rocket School:</b> Try small, medium, and large parts. Bigger parts add power, but also mass.`;
-  if(step===5) return `<b>Rocket School:</b> When Stage 1 burns out, press <b>DROP EMPTY STAGE</b>.`;
-  return `<b>Rocket School:</b> Watch the side boosters light with Stage 1 and separate when they burn out.`;
+  if(step===1) return `<b>Rocket School:</b> Load, launch, and notice the altitude. This first flight is just for learning the buttons.`;
+  if(step===2) return `<b>Rocket School:</b> Watch how engine push changes the flight. After this launch, try one different engine.`;
+  if(step===3) return `<b>Rocket School:</b> Watch whether the rocket stays pointed up. Fins near the bottom help it fly straight.`;
+  if(step===4) return `<b>Rocket School:</b> Watch <b>LIVE MASS</b>. Fuel helps the rocket push longer, but it starts heavy.`;
+  if(step===5) return `<b>Rocket School:</b> Try one part change at a time. Compare altitude after each launch.`;
+  return `<b>Rocket School:</b> This is the license challenge. Try to beat 6 km. Older students can press <b>NEXT STAGE</b> after burnout.`;
 }
 function renderRocketSchool(){
   const panel=document.getElementById('rocketSchoolPanel');
@@ -1280,7 +1280,7 @@ function renderRocketSchool(){
     <div class="school-steps">${steps}</div>
     <div class="school-lesson-list">${lessonList}</div>
     <div class="school-words ${schoolWordsVisible()?'show':''}">${l.words}</div>
-    <div class="school-note">All six Rocket School lessons are visible now. Locked lessons open after students complete the level before them.</div>
+    <div class="school-note">Flow: Load → Launch → Notice → Change one thing. Younger students can use the loaded rockets as-is; older students can test one part change after each launch.</div>
   </div>`;
 }
 function completeSchoolLessonIfReady(altitude){
